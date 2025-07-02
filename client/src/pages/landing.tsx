@@ -36,9 +36,11 @@ export default function Landing() {
               <h1 className="text-2xl font-bold text-primary">FoodieExpress</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Button onClick={() => window.location.href = '/api/login'}>
-                Sign In
-              </Button>
+              <Link href="/auth">
+                <Button>
+                  Sign In
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -118,12 +120,11 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900">Popular Restaurants</h2>
-            <Button 
-              variant="outline" 
-              onClick={() => window.location.href = '/api/login'}
-            >
-              View All <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
+            <Link href="/auth">
+              <Button variant="outline">
+                View All <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
           
           {restaurantsLoading ? (
@@ -179,12 +180,11 @@ export default function Landing() {
                     <div className="mt-4 pt-4 border-t border-gray-100">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Free delivery</span>
-                        <Button 
-                          size="sm"
-                          onClick={() => window.location.href = '/api/login'}
-                        >
-                          View Menu
-                        </Button>
+                        <Link href="/auth">
+                          <Button size="sm">
+                            View Menu
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   </CardContent>
@@ -202,13 +202,11 @@ export default function Landing() {
           <p className="text-xl mb-8 opacity-90">
             Join thousands of satisfied customers who trust FoodieExpress for their food delivery needs.
           </p>
-          <Button 
-            size="lg" 
-            variant="secondary"
-            onClick={() => window.location.href = '/api/login'}
-          >
-            Get Started Now
-          </Button>
+          <Link href="/auth">
+            <Button size="lg" variant="secondary">
+              Get Started Now
+            </Button>
+          </Link>
         </div>
       </section>
 
