@@ -28,7 +28,7 @@ export const sessions = pgTable(
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: varchar("username", { length: 255 }).unique().notNull(),
+  username: varchar("username", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).unique().notNull(),
   password: varchar("password", { length: 255 }).notNull(),
   firstName: varchar("first_name", { length: 255 }),

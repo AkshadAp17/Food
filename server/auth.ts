@@ -87,10 +87,7 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username, email, and password are required" });
       }
       
-      const existingUser = await storage.getUserByUsername(username);
-      if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
-      }
+      // Username uniqueness removed - multiple users can have the same username
 
       const existingEmail = await storage.getUserByEmail(email);
       if (existingEmail) {
@@ -111,13 +108,31 @@ export function setupAuth(app: Express) {
       const user = await storage.createUser(userData);
       console.log("User created successfully:", { id: user.id, username: user.username, email: user.email });
 
+      // Generate verification code (6-digit number)
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Send registration verification email
+      try {
+        const { emailService } = await import('./emailService');
+        await emailService.sendRegistrationVerification(user, verificationCode);
+        console.log("Registration verification email sent to:", user.email);
+      } catch (emailError) {
+        console.error("Failed to send registration verification email:", emailError);
+        // Continue with registration even if email fails
+      }
+
       req.login(user, (err) => {
         if (err) {
           console.error("Login error after registration:", err);
           return next(err);
         }
         console.log("User logged in successfully after registration");
-        res.status(201).json({ id: user.id, username: user.username, email: user.email });
+        res.status(201).json({ 
+          id: user.id, 
+          username: user.username, 
+          email: user.email,
+          message: "Registration successful! Check your email for verification code."
+        });
       });
     } catch (error) {
       console.error("Registration error:", error);

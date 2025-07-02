@@ -23,12 +23,12 @@ class EmailService {
 
   constructor() {
     const config: EmailConfig = {
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
       auth: {
-        user: process.env.SMTP_USER || '',
-        pass: process.env.SMTP_PASS || '',
+        user: 'akshadapastambh37@gmail.com',
+        pass: 'urxpqhiqtjuhmcrs',
       },
     };
 
@@ -292,6 +292,58 @@ class EmailService {
       from: process.env.SMTP_FROM || 'FoodieExpress <noreply@foodieexpress.com>',
       to: userEmail,
       subject: `Payment Confirmed - Order #FE${order.id}`,
+      html,
+    });
+  }
+
+  async sendRegistrationVerification(user: User, verificationCode: string): Promise<void> {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #FF6B35; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f9f9f9; }
+          .verification-section { background: white; padding: 20px; margin: 20px 0; border-radius: 5px; text-align: center; }
+          .verification-code { font-size: 24px; font-weight: bold; color: #FF6B35; padding: 10px; background: #f0f0f0; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; padding: 20px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Verify Your Registration</h1>
+          </div>
+          
+          <div class="content">
+            <div class="verification-section">
+              <h2>Hello ${user.firstName || user.username}!</h2>
+              <p>Thank you for registering with FoodieExpress!</p>
+              <p>To complete your registration, please use the verification code below:</p>
+              
+              <div class="verification-code">${verificationCode}</div>
+              
+              <p>This code will expire in 10 minutes for security purposes.</p>
+              <p>If you didn't register for FoodieExpress, please ignore this email.</p>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p>Welcome to FoodieExpress!</p>
+            <p>Delivering happiness, one meal at a time.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.transporter.sendMail({
+      from: 'FoodieExpress <akshadapastambh37@gmail.com>',
+      to: user.email,
+      subject: 'Verify Your FoodieExpress Registration',
+      text: `Welcome to FoodieExpress! Your verification code is: ${verificationCode}`,
       html,
     });
   }
