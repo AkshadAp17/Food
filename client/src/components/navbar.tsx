@@ -15,17 +15,17 @@ interface NavbarProps {
 
 export default function Navbar({ onCartClick }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logoutMutation } = useAuth();
 
   const { data: cartItems } = useQuery({
     queryKey: ['/api/cart'],
     enabled: isAuthenticated,
   });
 
-  const cartItemCount = cartItems?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
+  const cartItemCount = Array.isArray(cartItems) ? cartItems.reduce((sum: number, item: any) => sum + item.quantity, 0) : 0;
 
   const handleLogout = () => {
-    window.location.href = '/api/logout';
+    logoutMutation.mutate();
   };
 
   const getUserInitials = (user: any) => {
@@ -87,7 +87,7 @@ export default function Navbar({ onCartClick }: NavbarProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.profileImageUrl} alt={user.firstName || user.email} />
+                      <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || user.email || ''} />
                       <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
                     </Avatar>
                   </Button>
@@ -118,9 +118,11 @@ export default function Navbar({ onCartClick }: NavbarProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button onClick={() => window.location.href = '/api/login'}>
-                Sign In
-              </Button>
+              <Link href="/auth">
+                <Button>
+                  Sign In
+                </Button>
+              </Link>
             )}
             
             {/* Mobile menu button */}
@@ -151,12 +153,11 @@ export default function Navbar({ onCartClick }: NavbarProps) {
                     </Link>
                   )}
                   {!isAuthenticated && (
-                    <Button 
-                      className="mx-3"
-                      onClick={() => window.location.href = '/api/login'}
-                    >
-                      Sign In
-                    </Button>
+                    <Link href="/auth">
+                      <Button className="mx-3">
+                        Sign In
+                      </Button>
+                    </Link>
                   )}
                 </div>
               </SheetContent>

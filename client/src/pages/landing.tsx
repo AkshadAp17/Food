@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Search, Star, Clock, DollarSign, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,12 +68,11 @@ export default function Landing() {
                   className="pl-10 pr-32 py-6 text-lg"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-                  <Button 
-                    size="lg"
-                    onClick={() => window.location.href = '/api/login'}
-                  >
-                    Find Food
-                  </Button>
+                  <Link href="/auth">
+                    <Button size="lg">
+                      Find Food
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>

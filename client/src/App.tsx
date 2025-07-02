@@ -9,6 +9,7 @@ import Home from "@/pages/home";
 import Restaurant from "@/pages/restaurant";
 import Checkout from "@/pages/checkout";
 import Orders from "@/pages/orders";
+import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,7 +17,16 @@ function Router() {
 
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
+      <Route path="/auth" component={AuthPage} />
+      {isLoading ? (
+        <Route path="/">
+          {() => (
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-600"></div>
+            </div>
+          )}
+        </Route>
+      ) : !isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
         <>
