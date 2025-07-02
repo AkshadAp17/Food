@@ -25,7 +25,7 @@ import {
   type CartItemWithDetails,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, notInArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -59,6 +59,7 @@ export interface IStorage {
   createOrder(order: InsertOrder, items: InsertOrderItem[]): Promise<Order>;
   getOrders(userId: number): Promise<OrderWithItems[]>;
   getOrder(id: number): Promise<OrderWithItems | undefined>;
+  getAllActiveOrders(): Promise<Order[]>;
   updateOrderStatus(id: number, status: string): Promise<Order>;
 }
 
@@ -354,6 +355,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(orders.id, id));
     
     return order;
+  }
+
+  async getAllActiveOrders(): Promise<Order[]> {
+    return await db
+      .select()
+      .from(orders)
+      .where(notInArray(orders.status, ['delivered', 'cancelled']))
+      .orderBy(orders.createdAt);
   }
 
   async updateOrderStatus(id: number, status: string): Promise<Order> {

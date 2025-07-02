@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import type { OrderWithItems } from '@shared/schema';
+import type { OrderWithItems, User } from '@shared/schema';
 
 interface EmailConfig {
   host: string;
@@ -9,6 +9,13 @@ interface EmailConfig {
     user: string;
     pass: string;
   };
+}
+
+interface PaymentDetails {
+  paymentMethod: string;
+  cardLastFour?: string;
+  amount: number;
+  transactionId: string;
 }
 
 class EmailService {
@@ -171,6 +178,178 @@ class EmailService {
       from: process.env.SMTP_FROM || 'FoodieExpress <noreply@foodieexpress.com>',
       to: userEmail,
       subject: `Order Update - #FE${order.id} - ${order.status.replace('_', ' ').toUpperCase()}`,
+      html,
+    });
+  }
+
+  async sendLoginVerification(user: User, verificationCode: string): Promise<void> {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #FF6B35; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f9f9f9; }
+          .verification-code { background: white; padding: 30px; margin: 20px 0; border-radius: 5px; text-align: center; }
+          .code { font-size: 36px; font-weight: bold; color: #FF6B35; letter-spacing: 5px; margin: 20px 0; font-family: monospace; }
+          .footer { text-align: center; padding: 20px; color: #666; }
+          .warning { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; color: #856404; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>FoodieExpress</h1>
+            <h2>Login Verification</h2>
+          </div>
+          
+          <div class="content">
+            <p>Hi ${user.firstName || user.email}!</p>
+            <p>We received a login attempt for your FoodieExpress account. Please use the verification code below to complete your login:</p>
+            
+            <div class="verification-code">
+              <h3>Your Verification Code</h3>
+              <div class="code">${verificationCode}</div>
+              <p>This code will expire in 10 minutes.</p>
+            </div>
+            
+            <div class="warning">
+              <p><strong>Security Notice:</strong> If you didn't attempt to log in, please ignore this email and consider changing your password.</p>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p>Thank you for keeping your account secure!</p>
+            <p>FoodieExpress Team</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || 'FoodieExpress <noreply@foodieexpress.com>',
+      to: user.email,
+      subject: 'FoodieExpress - Login Verification Code',
+      html,
+    });
+  }
+
+  async sendPaymentVerification(order: OrderWithItems, userEmail: string, paymentDetails: PaymentDetails): Promise<void> {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #28a745; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f9f9f9; }
+          .payment-details { background: white; padding: 20px; margin: 20px 0; border-radius: 5px; }
+          .success-icon { font-size: 48px; color: #28a745; text-align: center; margin: 20px 0; }
+          .footer { text-align: center; padding: 20px; color: #666; }
+          .amount { font-size: 24px; font-weight: bold; color: #28a745; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>FoodieExpress</h1>
+            <h2>Payment Confirmed</h2>
+          </div>
+          
+          <div class="content">
+            <div class="success-icon">✅</div>
+            <p>Great news! Your payment has been successfully processed.</p>
+            
+            <div class="payment-details">
+              <h3>Payment Details</h3>
+              <p><strong>Order ID:</strong> #FE${order.id}</p>
+              <p><strong>Transaction ID:</strong> ${paymentDetails.transactionId}</p>
+              <p><strong>Payment Method:</strong> ${paymentDetails.paymentMethod}</p>
+              ${paymentDetails.cardLastFour ? `<p><strong>Card:</strong> ****${paymentDetails.cardLastFour}</p>` : ''}
+              <p><strong>Restaurant:</strong> ${order.restaurant.name}</p>
+              <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p class="amount">Amount Paid: $${paymentDetails.amount}</p>
+              </div>
+            </div>
+            
+            <p>Your order is now confirmed and being prepared. You'll receive another email when your order status updates.</p>
+          </div>
+          
+          <div class="footer">
+            <p>Thank you for your payment!</p>
+            <p>FoodieExpress Team</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || 'FoodieExpress <noreply@foodieexpress.com>',
+      to: userEmail,
+      subject: `Payment Confirmed - Order #FE${order.id}`,
+      html,
+    });
+  }
+
+  async sendWelcomeEmail(user: User): Promise<void> {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #FF6B35; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f9f9f9; }
+          .welcome-section { background: white; padding: 20px; margin: 20px 0; border-radius: 5px; }
+          .footer { text-align: center; padding: 20px; color: #666; }
+          .features { background: white; padding: 20px; margin: 20px 0; border-radius: 5px; }
+          .feature-item { margin: 10px 0; padding: 10px; border-left: 4px solid #FF6B35; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Welcome to FoodieExpress!</h1>
+          </div>
+          
+          <div class="content">
+            <div class="welcome-section">
+              <h2>Hello ${user.firstName || user.email}!</h2>
+              <p>Welcome to FoodieExpress - your gateway to delicious food delivered right to your doorstep!</p>
+              <p>We're excited to have you join our community of food lovers.</p>
+            </div>
+
+            <div class="features">
+              <h3>What you can do with FoodieExpress:</h3>
+              <div class="feature-item">🍕 Browse hundreds of restaurants and cuisines</div>
+              <div class="feature-item">🛒 Easy ordering with our smart cart system</div>
+              <div class="feature-item">📱 Track your orders in real-time</div>
+              <div class="feature-item">💳 Secure and simple payment process</div>
+              <div class="feature-item">📧 Email notifications for all order updates</div>
+            </div>
+            
+            <p>Ready to order? Start exploring restaurants near you and place your first order!</p>
+          </div>
+          
+          <div class="footer">
+            <p>Happy eating!</p>
+            <p>The FoodieExpress Team</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || 'FoodieExpress <noreply@foodieexpress.com>',
+      to: user.email,
+      subject: 'Welcome to FoodieExpress! 🍕',
       html,
     });
   }
