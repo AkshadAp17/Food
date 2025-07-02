@@ -25,16 +25,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   setupAuth(app);
 
-  // Auth routes
-  app.get('/api/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const user = req.user;
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  // Auth routes are handled in auth.ts
 
   // Restaurant routes
   app.get('/api/restaurants', async (req, res) => {
@@ -121,7 +112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cart routes
   app.get('/api/cart', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const cartItems = await storage.getCartItems(userId);
       res.json(cartItems);
     } catch (error) {
@@ -132,7 +123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/cart', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const cartItemData = insertCartItemSchema.parse({
         ...req.body,
         userId,
@@ -147,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/cart/:foodItemId', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const foodItemId = parseInt(req.params.foodItemId);
       const { quantity } = z.object({ quantity: z.number().min(1) }).parse(req.body);
       
@@ -161,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/cart/:foodItemId', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const foodItemId = parseInt(req.params.foodItemId);
       await storage.removeFromCart(userId, foodItemId);
       res.status(204).send();
@@ -173,7 +164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/cart', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       await storage.clearCart(userId);
       res.status(204).send();
     } catch (error) {
@@ -185,7 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Order routes
   app.post('/api/orders', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       
       if (!user || !user.email) {
@@ -222,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/orders', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const orders = await storage.getOrders(userId);
       res.json(orders);
     } catch (error) {
