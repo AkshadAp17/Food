@@ -48,15 +48,11 @@ export default function Navbar({ onCartClick }: NavbarProps) {
             </Link>
             <div className="hidden md:block ml-10">
               <div className="flex items-center space-x-4">
-                <Link href="/">
-                  <a className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium">
-                    Home
-                  </a>
+                <Link href="/" className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium">
+                  Home
                 </Link>
-                <Link href="/orders">
-                  <a className="text-gray-500 hover:text-primary px-3 py-2 text-sm font-medium">
-                    Orders
-                  </a>
+                <Link href="/orders" className="text-gray-500 hover:text-primary px-3 py-2 text-sm font-medium">
+                  Orders
                 </Link>
               </div>
             </div>
@@ -134,22 +130,20 @@ export default function Navbar({ onCartClick }: NavbarProps) {
               </SheetTrigger>
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                 <div className="flex flex-col space-y-4 mt-8">
-                  <Link href="/">
-                    <a 
-                      className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium block"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Home
-                    </a>
+                  <Link 
+                    href="/" 
+                    className="text-gray-900 hover:text-primary px-3 py-2 text-sm font-medium block"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Home
                   </Link>
                   {isAuthenticated && (
-                    <Link href="/orders">
-                      <a 
-                        className="text-gray-500 hover:text-primary px-3 py-2 text-sm font-medium block"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        Orders
-                      </a>
+                    <Link 
+                      href="/orders" 
+                      className="text-gray-500 hover:text-primary px-3 py-2 text-sm font-medium block"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Orders
                     </Link>
                   )}
                   {!isAuthenticated && (
