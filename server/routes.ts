@@ -287,7 +287,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paymentVerified = true; // Always return true for demo
       
       if (paymentVerified) {
-        await storage.updateOrderStatus(orderId, 'confirmed');
+        // Update order status
+        const updatedOrder = await storage.updateOrderStatus(orderId, 'confirmed');
+        
+        // Get full order details and user info for payment verification email
+        const fullOrder = await storage.getOrder(orderId);
+        const user = await storage.getUser(updatedOrder.userId);
+        
+        if (fullOrder && user && user.email) {
+          // Generate mock payment details
+          const paymentDetails = {
+            paymentMethod: paymentMethod,
+            cardLastFour: paymentMethod.includes('card') ? '4242' : undefined,
+            amount: parseFloat(fullOrder.totalAmount),
+            transactionId: `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`,
+          };
+          
+          // Send payment verification email
+          try {
+            const { emailService } = await import('./emailService');
+            await emailService.sendPaymentVerification(fullOrder, user.email, paymentDetails);
+            console.log("Payment verification email sent to:", user.email);
+          } catch (emailError) {
+            console.error("Failed to send payment verification email:", emailError);
+          }
+        }
+        
         res.json({ success: true, message: "Payment verified successfully" });
       } else {
         res.status(400).json({ success: false, message: "Payment verification failed" });

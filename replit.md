@@ -114,6 +114,13 @@ FoodieExpress is a modern food delivery application built with a full-stack Type
 ## Changelog
 
 - July 02, 2025. Initial setup
+- July 02, 2025. Fixed registration issues:
+  - Removed username uniqueness constraint from database schema
+  - Deleted all existing users to prevent conflicts
+  - Fixed session table index conflicts
+  - Added email verification system with Gmail SMTP
+  - Enhanced payment verification with automatic emails
+  - Order tracking service automatically starts with server
 
 ## User Preferences
 

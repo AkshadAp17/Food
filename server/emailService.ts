@@ -120,9 +120,10 @@ class EmailService {
     `;
 
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM || 'FoodieExpress <noreply@foodieexpress.com>',
+      from: 'FoodieExpress <akshadapastambh37@gmail.com>',
       to: userEmail,
-      subject: `Order Confirmation - #FE${order.id}`,
+      subject: `Order Confirmation #FE${order.id} - FoodieExpress`,
+      text: `Your order #FE${order.id} has been confirmed! Total: $${order.totalAmount}. Restaurant: ${order.restaurant.name}`,
       html,
     });
   }
@@ -289,9 +290,10 @@ class EmailService {
     `;
 
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM || 'FoodieExpress <noreply@foodieexpress.com>',
+      from: 'FoodieExpress <akshadapastambh37@gmail.com>',
       to: userEmail,
-      subject: `Payment Confirmed - Order #FE${order.id}`,
+      subject: `Payment Confirmed - Order #FE${order.id} ($${paymentDetails.amount})`,
+      text: `Payment confirmed for order #FE${order.id}. Amount: $${paymentDetails.amount}. Transaction ID: ${paymentDetails.transactionId}`,
       html,
     });
   }
