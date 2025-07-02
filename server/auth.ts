@@ -79,7 +79,13 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      console.log("Registration request body:", req.body);
       const { username, email, password, firstName, lastName, phone, address } = req.body;
+      
+      // Validate required fields
+      if (!username || !email || !password) {
+        return res.status(400).json({ message: "Username, email, and password are required" });
+      }
       
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
@@ -91,22 +97,32 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email already exists" });
       }
 
-      const user = await storage.createUser({
+      const userData = {
         username,
         email,
         password: await hashPassword(password),
-        firstName,
-        lastName,
-        phone,
-        address,
-      });
+        firstName: firstName || null,
+        lastName: lastName || null,
+        phone: phone || null,
+        address: address || null,
+      };
+      
+      console.log("Creating user with data:", { ...userData, password: "[HIDDEN]" });
+      const user = await storage.createUser(userData);
+      console.log("User created successfully:", { id: user.id, username: user.username, email: user.email });
 
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error("Login error after registration:", err);
+          return next(err);
+        }
+        console.log("User logged in successfully after registration");
         res.status(201).json({ id: user.id, username: user.username, email: user.email });
       });
     } catch (error) {
-      res.status(500).json({ message: "Registration failed" });
+      console.error("Registration error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ message: "Registration failed", error: errorMessage });
     }
   });
 
