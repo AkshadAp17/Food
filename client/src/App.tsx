@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Switch, Route, Router } from 'wouter';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { Toaster } from '@/components/ui/toaster';
@@ -10,20 +10,7 @@ import { OrdersPage } from '@/pages/OrdersPage';
 import { CheckoutPage } from '@/pages/CheckoutPage';
 import { TrackOrderPage } from '@/pages/TrackOrderPage';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      retry: (failureCount, error) => {
-        if (error instanceof Error && error.message.includes('401')) {
-          return false;
-        }
-        return failureCount < 3;
-      },
-    },
-  },
-});
+import { queryClient } from '@/lib/queryClient';
 
 function AppRouter() {
   const { user, isLoading } = useAuth();
