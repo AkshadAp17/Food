@@ -49,7 +49,7 @@ export function CheckoutPage() {
         const response = await fetch(`/api/cart/${user.id}`);
         if (response.ok) {
           const data = await response.json();
-          if (data.length === 0) {
+          if (!data || !Array.isArray(data) || data.length === 0) {
             navigate('/cart');
             return;
           }
@@ -82,12 +82,14 @@ export function CheckoutPage() {
   }, [user]);
 
   const getTotalPrice = () => {
+    if (!cartItems || cartItems.length === 0) return "0.00";
     return cartItems.reduce((total, item) => {
       return total + (parseFloat(item.foodItem.price) * item.quantity);
     }, 0).toFixed(2);
   };
 
   const getTotalItems = () => {
+    if (!cartItems || cartItems.length === 0) return 0;
     return cartItems.reduce((total, item) => total + item.quantity, 0);
   };
 
@@ -99,6 +101,15 @@ export function CheckoutPage() {
   };
 
   const placeOrder = async () => {
+    if (!cartItems || cartItems.length === 0) {
+      toast({
+        title: "Empty Cart",
+        description: "Your cart is empty. Please add items before placing an order.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!deliveryAddress.trim()) {
       toast({
         title: "Missing Information",
@@ -129,6 +140,10 @@ export function CheckoutPage() {
       // Get restaurant info from cart items
       const restaurantId = cartItems[0]?.foodItem.restaurant.id;
       
+      if (!restaurantId) {
+        throw new Error("Unable to identify restaurant from cart items");
+      }
+      
       const orderData = {
         order: {
           userId: user!.id,
@@ -143,7 +158,7 @@ export function CheckoutPage() {
           customerName: `${user!.firstName} ${user!.lastName}`,
           specialInstructions: instructions || null
         },
-        items: cartItems.map(item => ({
+        items: (cartItems || []).map(item => ({
           foodItemId: item.foodItem.id,
           quantity: item.quantity,
           price: parseFloat(item.foodItem.price).toString()
