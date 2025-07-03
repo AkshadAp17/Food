@@ -32,13 +32,31 @@ export function HomePage() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
 
-  const { data: restaurants = [], isLoading: restaurantsLoading } = useQuery<Restaurant[]>({
+  const { data: restaurants = [], isLoading: restaurantsLoading, error: restaurantsError } = useQuery<Restaurant[]>({
     queryKey: ['/api/restaurants'],
+    queryFn: async () => {
+      const response = await fetch('/api/restaurants');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    },
   });
 
-  const { data: categories = [] } = useQuery<Category[]>({
+  const { data: categories = [], error: categoriesError } = useQuery<Category[]>({
     queryKey: ['/api/categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/categories');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    },
   });
+
+  // Debug logging
+  console.log('Restaurants query:', { restaurants, restaurantsLoading, restaurantsError });
+  console.log('Categories query:', { categories, categoriesError });
 
   const filteredRestaurants = restaurants.filter(restaurant => {
     const matchesSearch = restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
