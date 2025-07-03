@@ -98,7 +98,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           phone: user.phone,
           address: user.address,
           city: user.city,
-          pincode: user.pincode
+          pincode: user.pincode,
+          isVerified: user.isVerified
         }
       });
     } catch (error) {
