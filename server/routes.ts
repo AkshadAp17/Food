@@ -254,6 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/cart", async (req, res) => {
     try {
+      console.log("Received cart item data:", req.body);
       const cartItem = await storage.addToCart(req.body);
       res.status(201).json(cartItem);
     } catch (error) {

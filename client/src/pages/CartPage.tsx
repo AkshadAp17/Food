@@ -38,7 +38,7 @@ export function CartPage() {
 
       try {
         setLoading(true);
-        const response = await fetch('/api/cart');
+        const response = await fetch(`/api/cart/${user.id}`);
         if (response.ok) {
           const data = await response.json();
           setCartItems(data);
@@ -65,19 +65,20 @@ export function CartPage() {
   }, [user, navigate, toast]);
 
   const updateCartQuantity = async (foodItemId: string, newQuantity: number) => {
+    if (!user) return;
+    
     if (newQuantity <= 0) {
       await removeFromCart(foodItemId);
       return;
     }
 
     try {
-      const response = await fetch('/api/cart', {
+      const response = await fetch(`/api/cart/${user!.id}/${foodItemId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          foodItemId,
           quantity: newQuantity
         })
       });
@@ -104,8 +105,10 @@ export function CartPage() {
   };
 
   const removeFromCart = async (foodItemId: string) => {
+    if (!user) return;
+    
     try {
-      const response = await fetch(`/api/cart/${foodItemId}`, {
+      const response = await fetch(`/api/cart/${user!.id}/${foodItemId}`, {
         method: 'DELETE'
       });
 
