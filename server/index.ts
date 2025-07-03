@@ -27,22 +27,17 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
   });
 
-  // Serve static files
-  if (process.env.NODE_ENV === "development") {
-    // In development, serve the client index.html for all non-API routes
-    app.get('*', (req, res) => {
-      if (req.path.startsWith('/api')) {
-        res.status(404).json({ message: 'API endpoint not found' });
-      } else {
-        res.sendFile('client/index.html', { root: process.cwd() });
-      }
-    });
-  } else {
-    app.use(express.static("dist"));
-    app.get('*', (req, res) => {
-      res.sendFile('dist/index.html', { root: process.cwd() });
-    });
-  }
+  // Serve static files from the built frontend
+  app.use(express.static("dist/public"));
+  
+  // Handle all non-API routes by serving the built index.html
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) {
+      res.status(404).json({ message: 'API endpoint not found' });
+    } else {
+      res.sendFile('dist/public/index.html', { root: process.cwd() });
+    }
+  });
 
   const PORT = process.env.PORT || 5000;
   server.listen(PORT, "0.0.0.0", () => {
