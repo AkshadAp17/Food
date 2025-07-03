@@ -37,6 +37,8 @@ export function HomePage() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
 
+  console.log('HomePage component rendered');
+
   // Fetch data directly with useEffect
   useEffect(() => {
     const fetchData = async () => {

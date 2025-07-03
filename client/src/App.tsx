@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthPage } from '@/pages/AuthPage';
 import { HomePage } from '@/pages/HomePage';
+import { TestPage } from '@/pages/TestPage';
 import { RestaurantPage } from '@/pages/RestaurantPage';
 import { CartPage } from '@/pages/CartPage';
 import { OrdersPage } from '@/pages/OrdersPage';
@@ -26,6 +27,7 @@ function AppRouter() {
   return (
     <Router>
       <Switch>
+        <Route path="/test" component={TestPage} />
         <Route path="/" component={HomePage} />
         <Route path="/restaurant/:id" component={RestaurantPage} />
         <Route path="/cart" component={CartPage} />
