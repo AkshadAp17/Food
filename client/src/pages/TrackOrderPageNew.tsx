@@ -52,81 +52,119 @@ export function TrackOrderPageNew() {
   const [, navigate] = useLocation();
   const [order, setOrder] = useState<SafeOrder | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
+  console.log('TrackOrderPageNew rendered with orderId:', orderId);
+
   useEffect(() => {
     const fetchOrder = async () => {
+      console.log('fetchOrder called with orderId:', orderId);
+      
       if (!orderId) {
+        console.log('No orderId provided, navigating to orders');
         navigate('/orders');
         return;
       }
 
       try {
         setLoading(true);
+        setError(null);
+        console.log('Fetching order details for:', orderId);
+        
         const response = await fetch(`/api/orders/details/${orderId}`);
+        console.log('Response status:', response.status);
         
         if (response.ok) {
           const rawData = await response.json();
-          console.log('Raw order data:', rawData);
+          console.log('Raw order data received:', rawData);
           
-          // Safely transform the data
-          const safeData: SafeOrder = {
-            id: rawData.id || '',
-            orderNumber: rawData.orderNumber || 'Unknown',
-            status: rawData.status || 'unknown',
-            totalAmount: rawData.total || rawData.totalAmount || '0.00',
-            deliveryAddress: rawData.deliveryAddress || 'Unknown address',
-            phone: rawData.customerPhone || rawData.phone || 'Unknown',
-            paymentMethod: rawData.paymentMethod || 'unknown',
-            instructions: rawData.specialInstructions || rawData.instructions || '',
-            createdAt: rawData.createdAt || new Date().toISOString(),
-            estimatedDeliveryTime: rawData.estimatedDeliveryTime || '',
-            restaurant: rawData.restaurant ? {
-              id: rawData.restaurant.id || '',
-              name: rawData.restaurant.name || 'Unknown Restaurant',
-              address: rawData.restaurant.address || 'Unknown address',
-              phone: rawData.restaurant.phone || 'Unknown'
-            } : null,
-            orderItems: (rawData.orderItems || []).map((item: any) => ({
-              id: item.id || Math.random().toString(),
-              quantity: item.quantity || 1,
-              price: item.price || '0.00',
-              foodItem: item.foodItem ? {
-                id: item.foodItem.id || '',
-                name: item.foodItem.name || 'Unknown Item',
-                price: item.foodItem.price || item.price || '0.00',
-                imageUrl: item.foodItem.imageUrl || ''
-              } : null
-            })),
-            tracking: (rawData.tracking || []).map((track: any) => ({
-              id: track.id || Math.random().toString(),
-              status: track.status || '',
-              message: track.message || '',
-              timestamp: track.timestamp || new Date().toISOString()
-            }))
-          };
+          // Check for null or undefined rawData
+          if (!rawData) {
+            throw new Error('No data received from server');
+          }
+          
+          try {
+            // Safely transform the data with extensive null checks
+            const safeData: SafeOrder = {
+              id: String(rawData.id || ''),
+              orderNumber: String(rawData.orderNumber || 'Unknown'),
+              status: String(rawData.status || 'unknown'),
+              totalAmount: String(rawData.total || rawData.totalAmount || '0.00'),
+              deliveryAddress: String(rawData.deliveryAddress || 'Unknown address'),
+              phone: String(rawData.customerPhone || rawData.phone || 'Unknown'),
+              paymentMethod: String(rawData.paymentMethod || 'unknown'),
+              instructions: String(rawData.specialInstructions || rawData.instructions || ''),
+              createdAt: String(rawData.createdAt || new Date().toISOString()),
+              estimatedDeliveryTime: String(rawData.estimatedDeliveryTime || ''),
+              restaurant: rawData.restaurant && typeof rawData.restaurant === 'object' ? {
+                id: String(rawData.restaurant.id || ''),
+                name: String(rawData.restaurant.name || 'Unknown Restaurant'),
+                address: String(rawData.restaurant.address || 'Unknown address'),
+                phone: String(rawData.restaurant.phone || 'Unknown')
+              } : {
+                id: '',
+                name: 'Unknown Restaurant',
+                address: 'Unknown address',
+                phone: 'Unknown'
+              },
+              orderItems: Array.isArray(rawData.orderItems) ? rawData.orderItems.map((item: any, index: number) => {
+                console.log(`Processing order item ${index}:`, item);
+                return {
+                  id: String(item?.id || `item-${index}`),
+                  quantity: Number(item?.quantity || 1),
+                  price: String(item?.price || '0.00'),
+                  foodItem: item?.foodItem && typeof item.foodItem === 'object' ? {
+                    id: String(item.foodItem.id || ''),
+                    name: String(item.foodItem.name || 'Unknown Item'),
+                    price: String(item.foodItem.price || item.price || '0.00'),
+                    imageUrl: String(item.foodItem.imageUrl || '')
+                  } : {
+                    id: '',
+                    name: 'Unknown Item',
+                    price: '0.00',
+                    imageUrl: ''
+                  }
+                };
+              }) : [],
+              tracking: Array.isArray(rawData.tracking) ? rawData.tracking.map((track: any, index: number) => {
+                console.log(`Processing tracking item ${index}:`, track);
+                return {
+                  id: String(track?.id || `track-${index}`),
+                  status: String(track?.status || ''),
+                  message: String(track?.message || ''),
+                  timestamp: String(track?.timestamp || new Date().toISOString())
+                };
+              }) : []
+            };
 
-          console.log('Safe order data:', safeData);
-          setOrder(safeData);
+            console.log('Transformed safe order data:', safeData);
+            setOrder(safeData);
+          } catch (transformError) {
+            console.error('Error transforming order data:', transformError);
+            setError('Failed to process order data');
+            return;
+          }
         } else if (response.status === 404) {
+          setError('Order not found');
           toast({
             title: "Order not found",
             description: "The order you're looking for doesn't exist",
             variant: "destructive"
           });
-          navigate('/orders');
         } else {
-          throw new Error('Failed to fetch order');
+          throw new Error(`HTTP ${response.status}: Failed to fetch order`);
         }
       } catch (error) {
-        console.error('Error fetching order:', error);
+        console.error('Error in fetchOrder:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        setError(errorMessage);
         toast({
           title: "Error",
-          description: "Failed to load order details",
+          description: `Failed to load order details: ${errorMessage}`,
           variant: "destructive"
         });
-        navigate('/orders');
       } finally {
         setLoading(false);
       }
@@ -197,6 +235,26 @@ export function TrackOrderPageNew() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading order details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Order</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="space-x-4">
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Retry
+            </Button>
+            <Button onClick={() => navigate('/orders')}>
+              View All Orders
+            </Button>
+          </div>
         </div>
       </div>
     );
