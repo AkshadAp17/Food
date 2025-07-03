@@ -84,7 +84,8 @@ export function CheckoutPage() {
   const getTotalPrice = () => {
     if (!cartItems || cartItems.length === 0) return "0.00";
     return cartItems.reduce((total, item) => {
-      return total + (parseFloat(item.foodItem.price) * item.quantity);
+      const price = item.foodItem?.price ? parseFloat(item.foodItem.price) : 0;
+      return total + (price * item.quantity);
     }, 0).toFixed(2);
   };
 
@@ -138,7 +139,7 @@ export function CheckoutPage() {
       const total = subtotal + deliveryFee + tax;
 
       // Get restaurant info from cart items
-      const restaurantId = cartItems[0]?.foodItem.restaurant.id;
+      const restaurantId = cartItems[0]?.foodItem?.restaurant?.id;
       
       if (!restaurantId) {
         throw new Error("Unable to identify restaurant from cart items");
@@ -159,10 +160,10 @@ export function CheckoutPage() {
           specialInstructions: instructions || null
         },
         items: (cartItems || []).map(item => ({
-          foodItemId: item.foodItem.id,
+          foodItemId: item.foodItem?.id || '',
           quantity: item.quantity,
-          price: parseFloat(item.foodItem.price).toString()
-        }))
+          price: item.foodItem?.price ? parseFloat(item.foodItem.price).toString() : '0'
+        })).filter(item => item.foodItemId)
       };
 
       const response = await fetch('/api/orders', {
@@ -343,12 +344,12 @@ export function CheckoutPage() {
                   {(cartItems || []).map((item) => (
                     <div key={item.id} className="flex justify-between items-start">
                       <div className="flex-1">
-                        <div className="font-medium text-sm">{item.foodItem.name}</div>
-                        <div className="text-xs text-gray-500">{item.foodItem.restaurant.name}</div>
+                        <div className="font-medium text-sm">{item.foodItem?.name || 'Unknown Item'}</div>
+                        <div className="text-xs text-gray-500">{item.foodItem?.restaurant?.name || 'Unknown Restaurant'}</div>
                         <div className="text-xs text-gray-500">Qty: {item.quantity}</div>
                       </div>
                       <div className="font-medium text-sm">
-                        ${(parseFloat(item.foodItem.price) * item.quantity).toFixed(2)}
+                        ${item.foodItem?.price ? (parseFloat(item.foodItem.price) * item.quantity).toFixed(2) : '0.00'}
                       </div>
                     </div>
                   ))}
