@@ -10,6 +10,7 @@ import { CartPage } from '@/pages/CartPage';
 import { OrdersPage } from '@/pages/OrdersPage';
 import { CheckoutPage } from '@/pages/CheckoutPage';
 import { TrackOrderPage } from '@/pages/TrackOrderPage';
+import { AdminPage } from '@/pages/AdminPage';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { queryClient } from '@/lib/queryClient';
 
@@ -33,6 +34,7 @@ function AppRouter() {
         <Route path="/checkout" component={CheckoutPage} />
         <Route path="/orders" component={OrdersPage} />
         <Route path="/track/:orderId" component={TrackOrderPage} />
+        <Route path="/admin" component={AdminPage} />
         <Route path="/" component={HomePage} />
         <Route>
           <div className="min-h-screen flex items-center justify-center">

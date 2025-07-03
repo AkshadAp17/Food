@@ -406,6 +406,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all pending orders (for admin verification)
+  app.get("/api/admin/pending-orders", async (req, res) => {
+    try {
+      const orders = await storage.getAllActiveOrders();
+      const pendingOrders = orders.filter(order => order.status === 'pending_payment');
+      
+      // Get order details for each pending order
+      const ordersWithDetails = await Promise.all(
+        pendingOrders.map(async (order) => {
+          const orderDetails = await storage.getOrder(order.id);
+          const user = await storage.getUser(order.userId);
+          return { ...orderDetails, userEmail: user?.email };
+        })
+      );
+      
+      res.json(ordersWithDetails);
+    } catch (error) {
+      console.error("Error fetching pending orders:", error);
+      res.status(500).json({ message: "Failed to fetch pending orders" });
+    }
+  });
+
+  // Admin confirm payment route
+  app.post("/api/admin/orders/:orderId/confirm-payment", async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Update order status to confirmed
+      await storage.updateOrderStatus(orderId, "confirmed");
+      await storage.addOrderTracking(orderId, "confirmed", "Payment confirmed by admin, order is being prepared");
+      
+      // Send confirmation email to customer
+      const user = await storage.getUser(order.userId);
+      if (user) {
+        await emailService.sendOrderConfirmationEmail(order, user.email);
+      }
+
+      res.json({ message: "Payment confirmed and order processed" });
+    } catch (error) {
+      console.error("Error confirming payment:", error);
+      res.status(500).json({ message: "Failed to confirm payment" });
+    }
+  });
+
   // Initialize sample data
   app.post("/api/init-data", async (req, res) => {
     try {

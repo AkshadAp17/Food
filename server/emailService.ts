@@ -108,10 +108,12 @@ class EmailService {
               </div>
               
               <div style="background: #e8f4fd; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea;">
-                <h3 style="color: #333; margin-top: 0;">To Complete Payment:</h3>
+                <h3 style="color: #333; margin-top: 0;">Payment Instructions:</h3>
                 <p style="color: #666; margin: 0;">
-                  Simply reply to this email with "CONFIRMED" to verify your payment. 
-                  Once verified, your order will be confirmed and preparation will begin.
+                  <strong>Payment Method:</strong> Cash on Delivery (COD)<br>
+                  <strong>Amount to Pay:</strong> ₹${paymentAmount}<br><br>
+                  Please reply to this email with "PAYMENT CONFIRMED" to confirm that you agree to pay the above amount upon delivery. 
+                  Once confirmed, your order will be processed and preparation will begin.
                 </p>
               </div>
               
@@ -152,9 +154,41 @@ class EmailService {
               <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <h3 style="color: #28a745; margin-top: 0;">Order #${order.orderNumber}</h3>
                 <p><strong>Restaurant:</strong> ${order.restaurant.name}</p>
-                <p><strong>Status:</strong> <span style="color: #28a745;">Confirmed</span></p>
-                <p><strong>Estimated Delivery:</strong> ${order.estimatedDeliveryTime ? new Date(order.estimatedDeliveryTime).toLocaleString() : '30-45 minutes'}</p>
-                <p><strong>Total Amount:</strong> ₹${order.total}</p>
+                <p><strong>Status:</strong> <span style="color: #28a745;">✅ Confirmed & Being Prepared</span></p>
+                <p><strong>Estimated Delivery:</strong> 30-45 minutes</p>
+                <p><strong>Delivery Address:</strong> ${order.deliveryAddress}</p>
+                <p><strong>Phone:</strong> ${order.customerPhone}</p>
+                <p><strong>Payment Method:</strong> ${order.paymentMethod === 'cash' ? 'Cash on Delivery' : 'Online Payment'}</p>
+                
+                <div style="margin-top: 20px;">
+                  <h4 style="color: #333; margin-bottom: 10px;">Your Order Items:</h4>
+                  ${order.orderItems.map(item => `
+                    <div style="border-bottom: 1px solid #eee; padding: 8px 0; display: flex; justify-content: space-between;">
+                      <div>
+                        <span style="font-weight: 500;">${item.foodItem.name}</span>
+                        <span style="color: #666;"> x${item.quantity}</span>
+                      </div>
+                      <span style="font-weight: 500;">$${(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
+                    </div>
+                  `).join('')}
+                  
+                  <div style="border-top: 2px solid #28a745; padding-top: 10px; margin-top: 10px;">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; color: #28a745;">
+                      <span>Total Amount:</span>
+                      <span>$${order.total}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745; margin: 20px 0;">
+                <h4 style="color: #333; margin-top: 0;">What happens next?</h4>
+                <ul style="color: #666; margin: 0; padding-left: 20px;">
+                  <li>Your order is now being prepared by the restaurant</li>
+                  <li>You'll receive updates via email as your order progresses</li>
+                  <li>Our delivery partner will contact you when they're on the way</li>
+                  <li>${order.paymentMethod === 'cash' ? 'Please keep the exact amount ready for cash payment' : 'Payment has been processed successfully'}</li>
+                </ul>
               </div>
               
               <div style="margin-top: 30px; text-align: center;">

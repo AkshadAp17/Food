@@ -161,8 +161,8 @@ export function CheckoutPage() {
         await fetch('/api/cart/clear', { method: 'DELETE' });
         
         toast({
-          title: "Order placed successfully!",
-          description: `Order #${order.orderNumber} has been confirmed. You'll receive an email confirmation shortly.`,
+          title: "Order Placed Successfully! 🎉",
+          description: `Order #${order.orderNumber} has been placed. Please check your email for payment confirmation instructions.`,
           variant: "default"
         });
 
