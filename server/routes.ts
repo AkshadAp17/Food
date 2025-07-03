@@ -3,9 +3,24 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { emailService } from "./emailService";
 import { orderTrackingService } from "./orderTrackingService";
+import { seedDatabase } from "./seedData";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Seed endpoint for development
+  app.post("/api/seed", async (req, res) => {
+    try {
+      const result = await seedDatabase();
+      res.json({ 
+        message: "Database seeded successfully", 
+        data: result 
+      });
+    } catch (error) {
+      console.error("Error seeding database:", error);
+      res.status(500).json({ message: "Failed to seed database" });
+    }
+  });
   
   // Auth routes
   app.post("/api/register", async (req, res) => {
