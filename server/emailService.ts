@@ -20,8 +20,8 @@ class EmailService {
       port: 587,
       secure: false,
       auth: {
-        user: process.env.EMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.EMAIL_PASS || 'your-app-password'
+        user: process.env.GMAIL_USER || 'your-email@gmail.com',
+        pass: process.env.GMAIL_APP_PASSWORD || 'your-app-password'
       }
     };
 
@@ -31,7 +31,7 @@ class EmailService {
   async sendOTPEmail(email: string, otpCode: string, firstName: string): Promise<boolean> {
     try {
       const mailOptions = {
-        from: `"FoodieExpress" <${process.env.EMAIL_USER}>`,
+        from: `"FoodieExpress" <${process.env.GMAIL_USER}>`,
         to: email,
         subject: 'Verify Your Account - OTP Code',
         html: `
@@ -76,7 +76,7 @@ class EmailService {
   ): Promise<boolean> {
     try {
       const mailOptions = {
-        from: `"FoodieExpress Payments" <${process.env.EMAIL_USER}>`,
+        from: `"FoodieExpress Payments" <${process.env.GMAIL_USER}>`,
         to: userEmail,
         subject: `Payment Verification Required - Order #${order.orderNumber}`,
         html: `
@@ -137,7 +137,7 @@ class EmailService {
   async sendOrderConfirmationEmail(order: OrderWithDetails, userEmail: string): Promise<boolean> {
     try {
       const mailOptions = {
-        from: `"FoodieExpress" <${process.env.EMAIL_USER}>`,
+        from: `"FoodieExpress" <${process.env.GMAIL_USER}>`,
         to: userEmail,
         subject: `Order Confirmed - #${order.orderNumber}`,
         html: `
@@ -199,7 +199,7 @@ class EmailService {
       };
 
       const mailOptions = {
-        from: `"FoodieExpress" <${process.env.EMAIL_USER}>`,
+        from: `"FoodieExpress" <${process.env.GMAIL_USER}>`,
         to: userEmail,
         subject: `Order Update - #${order.orderNumber}`,
         html: `
