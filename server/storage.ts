@@ -1,377 +1,482 @@
-import {
-  users,
-  restaurants,
-  categories,
-  foodItems,
-  orders,
-  orderItems,
-  cartItems,
-  type User,
-  type InsertUser,
-  type Restaurant,
-  type InsertRestaurant,
-  type Category,
-  type InsertCategory,
-  type FoodItem,
-  type InsertFoodItem,
-  type Order,
-  type InsertOrder,
-  type OrderItem,
-  type InsertOrderItem,
-  type CartItem,
-  type InsertCartItem,
-  type RestaurantWithItems,
-  type OrderWithItems,
-  type CartItemWithDetails,
-} from "@shared/schema";
-import { db } from "./db";
-import { eq, and, desc, sql, notInArray } from "drizzle-orm";
+import { db } from './db';
+import { 
+  users, restaurants, categories, foodItems, cartItems, orders, orderItems, orderTracking,
+  User, InsertUser, Restaurant, InsertRestaurant, Category, InsertCategory,
+  FoodItem, InsertFoodItem, CartItem, InsertCartItem, Order, InsertOrder,
+  OrderItem, InsertOrderItem, OrderTracking, RestaurantWithItems,
+  FoodItemWithDetails, CartItemWithDetails, OrderWithDetails
+} from '@shared/schema';
+import { eq, and, desc, sql } from 'drizzle-orm';
+import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
+import { promisify } from 'util';
+
+const scryptAsync = promisify(scrypt);
 
 export interface IStorage {
   // User operations
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, data: Partial<User>): Promise<User>;
+  verifyUser(email: string, otpCode: string): Promise<boolean>;
   
   // Restaurant operations
   getRestaurants(): Promise<Restaurant[]>;
-  getRestaurant(id: number): Promise<RestaurantWithItems | undefined>;
+  getRestaurant(id: string): Promise<RestaurantWithItems | undefined>;
   createRestaurant(restaurant: InsertRestaurant): Promise<Restaurant>;
+  searchRestaurants(query: string, cuisineType?: string): Promise<Restaurant[]>;
   
   // Category operations
   getCategories(): Promise<Category[]>;
   createCategory(category: InsertCategory): Promise<Category>;
   
   // Food item operations
-  getFoodItems(restaurantId?: number, categoryId?: number): Promise<FoodItem[]>;
-  getFoodItem(id: number): Promise<FoodItem | undefined>;
+  getFoodItems(restaurantId?: string, categoryId?: string): Promise<FoodItem[]>;
+  getFoodItem(id: string): Promise<FoodItemWithDetails | undefined>;
   createFoodItem(foodItem: InsertFoodItem): Promise<FoodItem>;
+  searchFoodItems(query: string): Promise<FoodItemWithDetails[]>;
   
   // Cart operations
-  getCartItems(userId: number): Promise<CartItemWithDetails[]>;
+  getCartItems(userId: string): Promise<CartItemWithDetails[]>;
   addToCart(cartItem: InsertCartItem): Promise<CartItem>;
-  updateCartItem(userId: number, foodItemId: number, quantity: number): Promise<CartItem>;
-  removeFromCart(userId: number, foodItemId: number): Promise<void>;
-  clearCart(userId: number): Promise<void>;
+  updateCartItem(userId: string, foodItemId: string, quantity: number): Promise<CartItem>;
+  removeFromCart(userId: string, foodItemId: string): Promise<void>;
+  clearCart(userId: string): Promise<void>;
   
   // Order operations
   createOrder(order: InsertOrder, items: InsertOrderItem[]): Promise<Order>;
-  getOrders(userId: number): Promise<OrderWithItems[]>;
-  getOrder(id: number): Promise<OrderWithItems | undefined>;
+  getOrders(userId: string): Promise<OrderWithDetails[]>;
+  getOrder(id: string): Promise<OrderWithDetails | undefined>;
   getAllActiveOrders(): Promise<Order[]>;
-  updateOrderStatus(id: number, status: string): Promise<Order>;
+  updateOrderStatus(id: string, status: string): Promise<Order>;
+  addOrderTracking(orderId: string, status: string, message: string): Promise<OrderTracking>;
+  
+  // Authentication helpers
+  hashPassword(password: string): Promise<string>;
+  verifyPassword(password: string, hash: string): Promise<boolean>;
+  generateOTP(): string;
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+  
+  async hashPassword(password: string): Promise<string> {
+    const salt = randomBytes(16).toString('hex');
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    return `${buf.toString('hex')}.${salt}`;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+  async verifyPassword(password: string, hash: string): Promise<boolean> {
+    const [hashed, salt] = hash.split('.');
+    const hashedBuf = Buffer.from(hashed, 'hex');
+    const suppliedBuf = (await scryptAsync(password, salt, 64)) as Buffer;
+    return timingSafeEqual(hashedBuf, suppliedBuf);
+  }
+
+  generateOTP(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
+    return user || undefined;
   }
 
   async createUser(userData: InsertUser): Promise<User> {
+    const hashedPassword = await this.hashPassword(userData.password);
+    const otpCode = this.generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
     const [user] = await db
       .insert(users)
-      .values(userData)
+      .values({
+        ...userData,
+        password: hashedPassword,
+        otpCode,
+        otpExpiry,
+        isVerified: false,
+      })
       .returning();
     return user;
   }
 
-  // Restaurant operations
+  async updateUser(id: string, data: Partial<User>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async verifyUser(email: string, otpCode: string): Promise<boolean> {
+    const user = await this.getUserByEmail(email);
+    if (!user || !user.otpCode || !user.otpExpiry) return false;
+    
+    const now = new Date();
+    if (now > user.otpExpiry) return false;
+    
+    if (user.otpCode === otpCode) {
+      await this.updateUser(user.id, {
+        isVerified: true,
+        otpCode: null,
+        otpExpiry: null,
+      });
+      return true;
+    }
+    return false;
+  }
+
   async getRestaurants(): Promise<Restaurant[]> {
     return await db.select().from(restaurants).where(eq(restaurants.isOpen, true));
   }
 
-  async getRestaurant(id: number): Promise<RestaurantWithItems | undefined> {
+  async getRestaurant(id: string): Promise<RestaurantWithItems | undefined> {
     const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, id));
     if (!restaurant) return undefined;
 
-    const items = await db.select().from(foodItems).where(eq(foodItems.restaurantId, id));
-    
+    const restaurantFoodItems = await db
+      .select()
+      .from(foodItems)
+      .where(and(eq(foodItems.restaurantId, id), eq(foodItems.isAvailable, true)));
+
     return {
       ...restaurant,
-      foodItems: items,
+      foodItems: restaurantFoodItems,
     };
   }
 
   async createRestaurant(restaurant: InsertRestaurant): Promise<Restaurant> {
-    const [newRestaurant] = await db.insert(restaurants).values(restaurant).returning();
+    const [newRestaurant] = await db
+      .insert(restaurants)
+      .values(restaurant)
+      .returning();
     return newRestaurant;
   }
 
-  // Category operations
+  async searchRestaurants(query: string, cuisineType?: string): Promise<Restaurant[]> {
+    let whereCondition = and(
+      eq(restaurants.isOpen, true),
+      sql`${restaurants.name} ILIKE ${`%${query}%`} OR ${restaurants.description} ILIKE ${`%${query}%`}`
+    );
+
+    if (cuisineType) {
+      whereCondition = and(
+        whereCondition,
+        sql`${restaurants.cuisineType} ILIKE ${`%${cuisineType}%`}`
+      );
+    }
+
+    return await db.select().from(restaurants).where(whereCondition);
+  }
+
   async getCategories(): Promise<Category[]> {
     return await db.select().from(categories);
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
-    const [newCategory] = await db.insert(categories).values(category).returning();
+    const [newCategory] = await db
+      .insert(categories)
+      .values(category)
+      .returning();
     return newCategory;
   }
 
-  // Food item operations
-  async getFoodItems(restaurantId?: number, categoryId?: number): Promise<FoodItem[]> {
-    let conditions = [eq(foodItems.isAvailable, true)];
-    
+  async getFoodItems(restaurantId?: string, categoryId?: string): Promise<FoodItem[]> {
+    let whereCondition = eq(foodItems.isAvailable, true);
+
     if (restaurantId) {
-      conditions.push(eq(foodItems.restaurantId, restaurantId));
+      whereCondition = and(whereCondition, eq(foodItems.restaurantId, restaurantId));
     }
-    
+
     if (categoryId) {
-      conditions.push(eq(foodItems.categoryId, categoryId));
+      whereCondition = and(whereCondition, eq(foodItems.categoryId, categoryId));
     }
-    
-    return await db.select().from(foodItems).where(and(...conditions));
+
+    return await db.select().from(foodItems).where(whereCondition);
   }
 
-  async getFoodItem(id: number): Promise<FoodItem | undefined> {
-    const [item] = await db.select().from(foodItems).where(eq(foodItems.id, id));
-    return item;
+  async getFoodItem(id: string): Promise<FoodItemWithDetails | undefined> {
+    const [foodItem] = await db
+      .select()
+      .from(foodItems)
+      .leftJoin(restaurants, eq(foodItems.restaurantId, restaurants.id))
+      .leftJoin(categories, eq(foodItems.categoryId, categories.id))
+      .where(eq(foodItems.id, id));
+
+    if (!foodItem || !foodItem.restaurants || !foodItem.categories) return undefined;
+
+    return {
+      ...foodItem.food_items,
+      restaurant: foodItem.restaurants,
+      category: foodItem.categories,
+    };
   }
 
   async createFoodItem(foodItem: InsertFoodItem): Promise<FoodItem> {
-    const [newItem] = await db.insert(foodItems).values(foodItem).returning();
-    return newItem;
+    const [newFoodItem] = await db
+      .insert(foodItems)
+      .values(foodItem)
+      .returning();
+    return newFoodItem;
   }
 
-  // Cart operations
+  async searchFoodItems(query: string): Promise<FoodItemWithDetails[]> {
+    const results = await db
+      .select()
+      .from(foodItems)
+      .leftJoin(restaurants, eq(foodItems.restaurantId, restaurants.id))
+      .leftJoin(categories, eq(foodItems.categoryId, categories.id))
+      .where(
+        and(
+          eq(foodItems.isAvailable, true),
+          sql`${foodItems.name} ILIKE ${`%${query}%`} OR ${foodItems.description} ILIKE ${`%${query}%`}`
+        )
+      );
+
+    return results
+      .filter(item => item.restaurants && item.categories)
+      .map(item => ({
+        ...item.food_items,
+        restaurant: item.restaurants!,
+        category: item.categories!,
+      }));
+  }
+
   async getCartItems(userId: string): Promise<CartItemWithDetails[]> {
-    return await db
-      .select({
-        id: cartItems.id,
-        userId: cartItems.userId,
-        foodItemId: cartItems.foodItemId,
-        quantity: cartItems.quantity,
-        specialInstructions: cartItems.specialInstructions,
-        createdAt: cartItems.createdAt,
-        updatedAt: cartItems.updatedAt,
-        foodItem: {
-          id: foodItems.id,
-          restaurantId: foodItems.restaurantId,
-          categoryId: foodItems.categoryId,
-          name: foodItems.name,
-          description: foodItems.description,
-          price: foodItems.price,
-          imageUrl: foodItems.imageUrl,
-          isVegetarian: foodItems.isVegetarian,
-          isVegan: foodItems.isVegan,
-          isGlutenFree: foodItems.isGlutenFree,
-          isAvailable: foodItems.isAvailable,
-          preparationTime: foodItems.preparationTime,
-          calories: foodItems.calories,
-          createdAt: foodItems.createdAt,
-          updatedAt: foodItems.updatedAt,
-          restaurant: {
-            id: restaurants.id,
-            name: restaurants.name,
-            description: restaurants.description,
-            cuisineType: restaurants.cuisineType,
-            imageUrl: restaurants.imageUrl,
-            rating: restaurants.rating,
-            deliveryTime: restaurants.deliveryTime,
-            minimumOrder: restaurants.minimumOrder,
-            deliveryFee: restaurants.deliveryFee,
-            isOpen: restaurants.isOpen,
-            address: restaurants.address,
-            phone: restaurants.phone,
-            createdAt: restaurants.createdAt,
-            updatedAt: restaurants.updatedAt,
-          },
-        },
-      })
+    const results = await db
+      .select()
       .from(cartItems)
-      .innerJoin(foodItems, eq(cartItems.foodItemId, foodItems.id))
-      .innerJoin(restaurants, eq(foodItems.restaurantId, restaurants.id))
+      .leftJoin(foodItems, eq(cartItems.foodItemId, foodItems.id))
+      .leftJoin(restaurants, eq(foodItems.restaurantId, restaurants.id))
+      .leftJoin(categories, eq(foodItems.categoryId, categories.id))
       .where(eq(cartItems.userId, userId));
+
+    return results
+      .filter(item => item.food_items && item.restaurants && item.categories)
+      .map(item => ({
+        ...item.cart_items,
+        foodItem: {
+          ...item.food_items!,
+          restaurant: item.restaurants!,
+          category: item.categories!,
+        },
+      }));
   }
 
   async addToCart(cartItem: InsertCartItem): Promise<CartItem> {
-    const [newItem] = await db
-      .insert(cartItems)
-      .values(cartItem)
-      .onConflictDoUpdate({
-        target: [cartItems.userId, cartItems.foodItemId],
-        set: {
-          quantity: sql`${cartItems.quantity} + ${cartItem.quantity}`,
+    // Check if item already exists in cart
+    const [existingItem] = await db
+      .select()
+      .from(cartItems)
+      .where(
+        and(
+          eq(cartItems.userId, cartItem.userId),
+          eq(cartItems.foodItemId, cartItem.foodItemId)
+        )
+      );
+
+    if (existingItem) {
+      // Update quantity
+      const [updatedItem] = await db
+        .update(cartItems)
+        .set({
+          quantity: existingItem.quantity + cartItem.quantity,
           updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return newItem;
+        })
+        .where(eq(cartItems.id, existingItem.id))
+        .returning();
+      return updatedItem;
+    } else {
+      // Add new item
+      const [newItem] = await db
+        .insert(cartItems)
+        .values(cartItem)
+        .returning();
+      return newItem;
+    }
   }
 
-  async updateCartItem(userId: string, foodItemId: number, quantity: number): Promise<CartItem> {
+  async updateCartItem(userId: string, foodItemId: string, quantity: number): Promise<CartItem> {
     const [updatedItem] = await db
       .update(cartItems)
       .set({ quantity, updatedAt: new Date() })
-      .where(and(eq(cartItems.userId, userId), eq(cartItems.foodItemId, foodItemId)))
+      .where(
+        and(
+          eq(cartItems.userId, userId),
+          eq(cartItems.foodItemId, foodItemId)
+        )
+      )
       .returning();
     return updatedItem;
   }
 
-  async removeFromCart(userId: string, foodItemId: number): Promise<void> {
+  async removeFromCart(userId: string, foodItemId: string): Promise<void> {
     await db
       .delete(cartItems)
-      .where(and(eq(cartItems.userId, userId), eq(cartItems.foodItemId, foodItemId)));
+      .where(
+        and(
+          eq(cartItems.userId, userId),
+          eq(cartItems.foodItemId, foodItemId)
+        )
+      );
   }
 
   async clearCart(userId: string): Promise<void> {
     await db.delete(cartItems).where(eq(cartItems.userId, userId));
   }
 
-  // Order operations
   async createOrder(order: InsertOrder, items: InsertOrderItem[]): Promise<Order> {
-    const [newOrder] = await db.insert(orders).values(order).returning();
+    const orderNumber = `ORD${Date.now()}${Math.floor(Math.random() * 1000)}`;
     
-    const orderItemsWithOrderId = items.map(item => ({
-      ...item,
-      orderId: newOrder.id,
-    }));
-    
-    await db.insert(orderItems).values(orderItemsWithOrderId);
-    
+    const [newOrder] = await db
+      .insert(orders)
+      .values({
+        ...order,
+        orderNumber,
+      })
+      .returning();
+
+    // Add order items
+    await db.insert(orderItems).values(
+      items.map(item => ({
+        ...item,
+        orderId: newOrder.id,
+      }))
+    );
+
+    // Add initial tracking
+    await this.addOrderTracking(newOrder.id, 'pending', 'Order placed successfully');
+
     return newOrder;
   }
 
-  async getOrders(userId: string): Promise<OrderWithItems[]> {
-    return await db
-      .select({
-        id: orders.id,
-        userId: orders.userId,
-        restaurantId: orders.restaurantId,
-        status: orders.status,
-        totalAmount: orders.totalAmount,
-        subtotal: orders.subtotal,
-        deliveryFee: orders.deliveryFee,
-        tax: orders.tax,
-        deliveryAddress: orders.deliveryAddress,
-        phone: orders.phone,
-        notes: orders.notes,
-        estimatedDeliveryTime: orders.estimatedDeliveryTime,
-        deliveredAt: orders.deliveredAt,
-        paymentStatus: orders.paymentStatus,
-        paymentMethod: orders.paymentMethod,
-        createdAt: orders.createdAt,
-        updatedAt: orders.updatedAt,
-        orderItems: sql`
-          (SELECT json_agg(
-            json_build_object(
-              'id', ${orderItems.id},
-              'orderId', ${orderItems.orderId},
-              'foodItemId', ${orderItems.foodItemId},
-              'quantity', ${orderItems.quantity},
-              'price', ${orderItems.price},
-              'totalPrice', ${orderItems.totalPrice},
-              'specialInstructions', ${orderItems.specialInstructions},
-              'foodItem', json_build_object(
-                'id', ${foodItems.id},
-                'name', ${foodItems.name},
-                'description', ${foodItems.description},
-                'price', ${foodItems.price},
-                'imageUrl', ${foodItems.imageUrl}
-              )
-            )
-          ) FROM ${orderItems} 
-          INNER JOIN ${foodItems} ON ${orderItems.foodItemId} = ${foodItems.id}
-          WHERE ${orderItems.orderId} = ${orders.id})
-        `,
-        restaurant: {
-          id: restaurants.id,
-          name: restaurants.name,
-          cuisine: restaurants.cuisine,
-          imageUrl: restaurants.imageUrl,
-          phone: restaurants.phone,
-        },
-      })
+  async getOrders(userId: string): Promise<OrderWithDetails[]> {
+    const userOrders = await db
+      .select()
       .from(orders)
-      .innerJoin(restaurants, eq(orders.restaurantId, restaurants.id))
+      .leftJoin(restaurants, eq(orders.restaurantId, restaurants.id))
       .where(eq(orders.userId, userId))
       .orderBy(desc(orders.createdAt));
+
+    const ordersWithDetails: OrderWithDetails[] = [];
+
+    for (const orderData of userOrders) {
+      if (!orderData.restaurants) continue;
+
+      const orderItemsData = await db
+        .select()
+        .from(orderItems)
+        .leftJoin(foodItems, eq(orderItems.foodItemId, foodItems.id))
+        .where(eq(orderItems.orderId, orderData.orders.id));
+
+      const trackingData = await db
+        .select()
+        .from(orderTracking)
+        .where(eq(orderTracking.orderId, orderData.orders.id))
+        .orderBy(desc(orderTracking.timestamp));
+
+      ordersWithDetails.push({
+        ...orderData.orders,
+        restaurant: orderData.restaurants,
+        orderItems: orderItemsData
+          .filter(item => item.food_items)
+          .map(item => ({
+            ...item.order_items,
+            foodItem: item.food_items!,
+          })),
+        tracking: trackingData,
+      });
+    }
+
+    return ordersWithDetails;
   }
 
-  async getOrder(id: number): Promise<OrderWithItems | undefined> {
-    const [order] = await db
-      .select({
-        id: orders.id,
-        userId: orders.userId,
-        restaurantId: orders.restaurantId,
-        status: orders.status,
-        totalAmount: orders.totalAmount,
-        subtotal: orders.subtotal,
-        deliveryFee: orders.deliveryFee,
-        tax: orders.tax,
-        deliveryAddress: orders.deliveryAddress,
-        phone: orders.phone,
-        notes: orders.notes,
-        estimatedDeliveryTime: orders.estimatedDeliveryTime,
-        deliveredAt: orders.deliveredAt,
-        paymentStatus: orders.paymentStatus,
-        paymentMethod: orders.paymentMethod,
-        createdAt: orders.createdAt,
-        updatedAt: orders.updatedAt,
-        orderItems: sql`
-          (SELECT json_agg(
-            json_build_object(
-              'id', ${orderItems.id},
-              'orderId', ${orderItems.orderId},
-              'foodItemId', ${orderItems.foodItemId},
-              'quantity', ${orderItems.quantity},
-              'price', ${orderItems.price},
-              'totalPrice', ${orderItems.totalPrice},
-              'specialInstructions', ${orderItems.specialInstructions},
-              'foodItem', json_build_object(
-                'id', ${foodItems.id},
-                'name', ${foodItems.name},
-                'description', ${foodItems.description},
-                'price', ${foodItems.price},
-                'imageUrl', ${foodItems.imageUrl}
-              )
-            )
-          ) FROM ${orderItems} 
-          INNER JOIN ${foodItems} ON ${orderItems.foodItemId} = ${foodItems.id}
-          WHERE ${orderItems.orderId} = ${orders.id})
-        `,
-        restaurant: {
-          id: restaurants.id,
-          name: restaurants.name,
-          cuisine: restaurants.cuisine,
-          imageUrl: restaurants.imageUrl,
-          phone: restaurants.phone,
-        },
-      })
+  async getOrder(id: string): Promise<OrderWithDetails | undefined> {
+    const [orderData] = await db
+      .select()
       .from(orders)
-      .innerJoin(restaurants, eq(orders.restaurantId, restaurants.id))
+      .leftJoin(restaurants, eq(orders.restaurantId, restaurants.id))
       .where(eq(orders.id, id));
-    
-    return order;
+
+    if (!orderData || !orderData.restaurants) return undefined;
+
+    const orderItemsData = await db
+      .select()
+      .from(orderItems)
+      .leftJoin(foodItems, eq(orderItems.foodItemId, foodItems.id))
+      .where(eq(orderItems.orderId, id));
+
+    const trackingData = await db
+      .select()
+      .from(orderTracking)
+      .where(eq(orderTracking.orderId, id))
+      .orderBy(desc(orderTracking.timestamp));
+
+    return {
+      ...orderData.orders,
+      restaurant: orderData.restaurants,
+      orderItems: orderItemsData
+        .filter(item => item.food_items)
+        .map(item => ({
+          ...item.order_items,
+          foodItem: item.food_items!,
+        })),
+      tracking: trackingData,
+    };
   }
 
   async getAllActiveOrders(): Promise<Order[]> {
     return await db
       .select()
       .from(orders)
-      .where(notInArray(orders.status, ['delivered', 'cancelled']))
-      .orderBy(orders.createdAt);
+      .where(
+        and(
+          sql`${orders.status} != 'delivered'`,
+          sql`${orders.status} != 'cancelled'`
+        )
+      );
   }
 
-  async updateOrderStatus(id: number, status: string): Promise<Order> {
+  async updateOrderStatus(id: string, status: string): Promise<Order> {
     const [updatedOrder] = await db
       .update(orders)
       .set({ status, updatedAt: new Date() })
       .where(eq(orders.id, id))
       .returning();
+
+    // Add tracking entry
+    const statusMessages = {
+      'confirmed': 'Order confirmed and being prepared',
+      'preparing': 'Kitchen has started preparing your order',
+      'out_for_delivery': 'Order is out for delivery',
+      'delivered': 'Order delivered successfully',
+      'cancelled': 'Order has been cancelled'
+    };
+
+    await this.addOrderTracking(
+      id, 
+      status, 
+      statusMessages[status as keyof typeof statusMessages] || `Order status updated to ${status}`
+    );
+
     return updatedOrder;
+  }
+
+  async addOrderTracking(orderId: string, status: string, message: string): Promise<OrderTracking> {
+    const [tracking] = await db
+      .insert(orderTracking)
+      .values({
+        orderId,
+        status,
+        message,
+      })
+      .returning();
+    return tracking;
   }
 }
 

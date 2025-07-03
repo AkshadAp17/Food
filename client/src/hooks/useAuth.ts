@@ -1,92 +1,106 @@
-import {
-  useQuery,
-  useMutation,
-  UseMutationResult,
-} from "@tanstack/react-query";
-import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
-import { apiRequest, queryClient } from "../lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { createContext, useContext, useState, useEffect, createElement } from 'react';
+import type { ReactNode } from 'react';
+import { apiRequest } from '@/lib/queryClient';
 
-type AuthContextType = {
-  user: SelectUser | null;
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  pincode?: string;
+  isVerified: boolean;
+}
+
+interface AuthContextType {
+  user: User | null;
   isLoading: boolean;
-  error: Error | null;
-  loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
-  logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
-  isAuthenticated: boolean;
-};
+  login: (email: string, password: string) => Promise<void>;
+  register: (userData: RegisterData) => Promise<{ userId: string; email: string }>;
+  verifyOTP: (email: string, otp: string) => Promise<void>;
+  resendOTP: (email: string) => Promise<void>;
+  logout: () => void;
+}
 
-type LoginData = Pick<InsertUser, "username" | "password">;
+interface RegisterData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  password: string;
+}
 
-export function useAuth(): AuthContextType {
-  const { toast } = useToast();
-  const {
-    data: user,
-    error,
-    isLoading,
-  } = useQuery<SelectUser | undefined, Error>({
-    queryKey: ["/api/user"],
-    retry: false,
-  });
+const AuthContext = createContext<AuthContextType | null>(null);
 
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
-    },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Login failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const registerMutation = useMutation({
-    mutationFn: async (credentials: InsertUser) => {
-      const res = await apiRequest("POST", "/api/register", credentials);
-      return await res.json();
-    },
-    onSuccess: (user: SelectUser) => {
-      queryClient.setQueryData(["/api/user"], user);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Registration failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  useEffect(() => {
+    // Check for existing user session
+    const savedUser = localStorage.getItem('foodie_user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        localStorage.removeItem('foodie_user');
+      }
+    }
+    setIsLoading(false);
+  }, []);
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
-    },
-    onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  return {
-    user: user ?? null,
-    isLoading,
-    error,
-    loginMutation,
-    logoutMutation,
-    registerMutation,
-    isAuthenticated: !!user,
+  const login = async (email: string, password: string): Promise<void> => {
+    const response = await apiRequest('POST', '/api/login', { email, password });
+    const data = await response.json();
+    
+    const userData = data.user;
+    setUser(userData);
+    localStorage.setItem('foodie_user', JSON.stringify(userData));
   };
+
+  const register = async (userData: RegisterData): Promise<{ userId: string; email: string }> => {
+    const response = await apiRequest('POST', '/api/register', userData);
+    const data = await response.json();
+    return { userId: data.userId, email: data.email };
+  };
+
+  const verifyOTP = async (email: string, otp: string): Promise<void> => {
+    const response = await apiRequest('POST', '/api/verify-otp', { email, otp });
+    const data = await response.json();
+    
+    const userData = data.user;
+    setUser(userData);
+    localStorage.setItem('foodie_user', JSON.stringify(userData));
+  };
+
+  const resendOTP = async (email: string): Promise<void> => {
+    await apiRequest('POST', '/api/resend-otp', { email });
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('foodie_user');
+  };
+
+  const value = {
+    user,
+    isLoading,
+    login,
+    register,
+    verifyOTP,
+    resendOTP,
+    logout,
+  };
+
+  return createElement(AuthContext.Provider, { value }, children);
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }

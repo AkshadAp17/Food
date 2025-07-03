@@ -1,53 +1,72 @@
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { useAuth } from "@/hooks/useAuth";
-import Landing from "@/pages/landing";
-import Home from "@/pages/home";
-import Restaurant from "@/pages/restaurant";
-import Checkout from "@/pages/checkout";
-import Orders from "@/pages/orders";
-import AuthPage from "@/pages/auth-page";
-import NotFound from "@/pages/not-found";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Switch, Route, Router } from 'wouter';
+import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { Toaster } from '@/components/ui/toaster';
+import { AuthPage } from '@/pages/AuthPage';
+import { HomePage } from '@/pages/HomePage';
+import { RestaurantPage } from '@/pages/RestaurantPage';
+import { CartPage } from '@/pages/CartPage';
+import { OrdersPage } from '@/pages/OrdersPage';
+import { CheckoutPage } from '@/pages/CheckoutPage';
+import { TrackOrderPage } from '@/pages/TrackOrderPage';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
-function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      retry: (failureCount, error) => {
+        if (error instanceof Error && error.message.includes('401')) {
+          return false;
+        }
+        return failureCount < 3;
+      },
+    },
+  },
+});
+
+function AppRouter() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!user || !user.isVerified) {
+    return <AuthPage />;
+  }
 
   return (
-    <Switch>
-      <Route path="/auth" component={AuthPage} />
-      {isLoading ? (
-        <Route path="/">
-          {() => (
-            <div className="flex items-center justify-center min-h-screen">
-              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-600"></div>
+    <Router>
+      <Switch>
+        <Route path="/" component={HomePage} />
+        <Route path="/restaurant/:id" component={RestaurantPage} />
+        <Route path="/cart" component={CartPage} />
+        <Route path="/checkout" component={CheckoutPage} />
+        <Route path="/orders" component={OrdersPage} />
+        <Route path="/track/:orderId" component={TrackOrderPage} />
+        <Route>
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
+              <p className="text-gray-600">Page not found</p>
             </div>
-          )}
+          </div>
         </Route>
-      ) : !isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
-        <>
-          <Route path="/" component={Home} />
-          <Route path="/restaurant/:id" component={Restaurant} />
-          <Route path="/checkout" component={Checkout} />
-          <Route path="/orders" component={Orders} />
-        </>
-      )}
-      <Route component={NotFound} />
-    </Switch>
+      </Switch>
+    </Router>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <div className="min-h-screen bg-gray-50">
+          <AppRouter />
+          <Toaster />
+        </div>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

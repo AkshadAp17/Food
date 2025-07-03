@@ -5,12 +5,14 @@ export class OrderTrackingService {
   private intervalId: NodeJS.Timeout | null = null;
 
   start() {
-    // Check orders every 30 seconds and update status automatically
-    this.intervalId = setInterval(async () => {
-      await this.processOrderUpdates();
+    console.log('Starting order tracking service...');
+    // Process order updates every 30 seconds
+    this.intervalId = setInterval(() => {
+      this.processOrderUpdates();
     }, 30000);
     
-    console.log('Order tracking service started');
+    // Also process immediately
+    this.processOrderUpdates();
   }
 
   stop() {
@@ -23,47 +25,28 @@ export class OrderTrackingService {
 
   private async processOrderUpdates() {
     try {
-      // Get all active orders (not delivered or cancelled)
-      const orders = await storage.getAllActiveOrders();
+      const activeOrders = await storage.getAllActiveOrders();
       
-      for (const order of orders) {
+      for (const order of activeOrders) {
         const orderAge = Date.now() - new Date(order.createdAt).getTime();
-        const minutesElapsed = Math.floor(orderAge / (1000 * 60));
-        
+        const ageInMinutes = Math.floor(orderAge / (1000 * 60));
+
+        // Simulate order status progression based on time
         let newStatus = order.status;
         
-        // Simulate realistic order progression based on time
-        switch (order.status) {
-          case 'confirmed':
-            if (minutesElapsed >= 2) {
-              newStatus = 'preparing';
-            }
-            break;
-          case 'preparing':
-            if (minutesElapsed >= 15) {
-              newStatus = 'out_for_delivery';
-            }
-            break;
-          case 'out_for_delivery':
-            if (minutesElapsed >= 25) {
-              newStatus = 'delivered';
-            }
-            break;
+        if (order.status === 'pending' && ageInMinutes >= 2) {
+          newStatus = 'confirmed';
+        } else if (order.status === 'confirmed' && ageInMinutes >= 5) {
+          newStatus = 'preparing';
+        } else if (order.status === 'preparing' && ageInMinutes >= 15) {
+          newStatus = 'out_for_delivery';
+        } else if (order.status === 'out_for_delivery' && ageInMinutes >= 25) {
+          newStatus = 'delivered';
         }
-        
+
         // Update status if changed
         if (newStatus !== order.status) {
-          const updatedOrder = await storage.updateOrderStatus(order.id, newStatus);
-          const orderWithDetails = await storage.getOrder(order.id);
-          
-          if (orderWithDetails) {
-            // Get user email for notification
-            const user = await storage.getUser(order.userId);
-            if (user?.email) {
-              await emailService.sendOrderStatusUpdate(orderWithDetails, user.email);
-              console.log(`Order #${order.id} status updated to ${newStatus}, email sent to ${user.email}`);
-            }
-          }
+          await this.updateOrderStatus(order.id, newStatus);
         }
       }
     } catch (error) {
@@ -71,23 +54,26 @@ export class OrderTrackingService {
     }
   }
 
-  // Manual method to update a specific order
-  async updateOrderStatus(orderId: number, status: string) {
+  async updateOrderStatus(orderId: string, status: string) {
     try {
-      const updatedOrder = await storage.updateOrderStatus(orderId, status);
-      const orderWithDetails = await storage.getOrder(orderId);
+      await storage.updateOrderStatus(orderId, status);
       
+      // Send email notification
+      const orderWithDetails = await storage.getOrder(orderId);
       if (orderWithDetails) {
         const user = await storage.getUser(orderWithDetails.userId);
-        if (user?.email) {
-          await emailService.sendOrderStatusUpdate(orderWithDetails, user.email);
+        if (user) {
+          await emailService.sendOrderStatusUpdateEmail(
+            orderWithDetails,
+            user.email,
+            status
+          );
         }
       }
       
-      return updatedOrder;
+      console.log(`Order ${orderId} status updated to: ${status}`);
     } catch (error) {
-      console.error('Error updating order status:', error);
-      throw error;
+      console.error(`Error updating order ${orderId} status:`, error);
     }
   }
 }

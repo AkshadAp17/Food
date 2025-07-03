@@ -1,131 +1,134 @@
-import {
-  pgTable,
-  text,
-  varchar,
-  timestamp,
-  jsonb,
-  index,
-  serial,
-  integer,
-  decimal,
-  boolean,
-  primaryKey,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, integer, decimal, boolean, timestamp, uuid } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
 
-// Session storage table (required for Replit Auth)
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
-);
-
+// Users table with OTP verification
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: varchar("username", { length: 255 }).notNull(),
-  email: varchar("email", { length: 255 }).unique().notNull(),
-  password: varchar("password", { length: 255 }).notNull(),
-  firstName: varchar("first_name", { length: 255 }),
-  lastName: varchar("last_name", { length: 255 }),
-  phone: varchar("phone", { length: 20 }),
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  phone: text("phone"),
+  password: text("password").notNull(),
+  isVerified: boolean("is_verified").default(false),
+  otpCode: text("otp_code"),
+  otpExpiry: timestamp("otp_expiry"),
   address: text("address"),
-  profileImageUrl: varchar("profile_image_url"),
+  city: text("city"),
+  pincode: text("pincode"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Restaurants table
 export const restaurants = pgTable("restaurants", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
   description: text("description"),
-  cuisine: varchar("cuisine", { length: 255 }).notNull(),
-  imageUrl: varchar("image_url"),
+  cuisineType: text("cuisine_type").notNull(),
+  imageUrl: text("image_url"),
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0.00"),
-  deliveryTime: varchar("delivery_time", { length: 50 }),
+  deliveryTime: text("delivery_time"),
   minimumOrder: decimal("minimum_order", { precision: 10, scale: 2 }).default("0.00"),
   deliveryFee: decimal("delivery_fee", { precision: 10, scale: 2 }).default("0.00"),
   isOpen: boolean("is_open").default(true),
-  address: text("address"),
-  phone: varchar("phone"),
+  address: text("address").notNull(),
+  phone: text("phone"),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Categories table
 export const categories = pgTable("categories", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  imageUrl: varchar("image_url"),
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  imageUrl: text("image_url"),
+  description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Food items table
 export const foodItems = pgTable("food_items", {
-  id: serial("id").primaryKey(),
-  restaurantId: integer("restaurant_id").references(() => restaurants.id).notNull(),
-  categoryId: integer("category_id").references(() => categories.id),
-  name: varchar("name", { length: 255 }).notNull(),
+  id: uuid("id").primaryKey().defaultRandom(),
+  restaurantId: uuid("restaurant_id").notNull().references(() => restaurants.id),
+  categoryId: uuid("category_id").notNull().references(() => categories.id),
+  name: text("name").notNull(),
   description: text("description"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  imageUrl: varchar("image_url"),
-  isVegetarian: boolean("is_vegetarian").default(false),
-  isVegan: boolean("is_vegan").default(false),
-  isGlutenFree: boolean("is_gluten_free").default(false),
+  originalPrice: decimal("original_price", { precision: 10, scale: 2 }),
+  imageUrl: text("image_url"),
+  isVeg: boolean("is_veg").default(true),
   isAvailable: boolean("is_available").default(true),
-  preparationTime: integer("preparation_time"), // in minutes
+  preparationTime: integer("preparation_time"),
+  spiceLevel: text("spice_level"),
   calories: integer("calories"),
+  ingredients: text("ingredients"),
+  allergens: text("allergens"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Cart items table
+export const cartItems = pgTable("cart_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  foodItemId: uuid("food_item_id").notNull().references(() => foodItems.id),
+  quantity: integer("quantity").notNull().default(1),
+  specialInstructions: text("special_instructions"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Orders table
 export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  restaurantId: integer("restaurant_id").references(() => restaurants.id).notNull(),
-  status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, confirmed, preparing, out_for_delivery, delivered, cancelled
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  restaurantId: uuid("restaurant_id").notNull().references(() => restaurants.id),
+  orderNumber: text("order_number").notNull().unique(),
+  status: text("status").notNull().default("pending"),
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
   deliveryFee: decimal("delivery_fee", { precision: 10, scale: 2 }).notNull(),
-  tax: decimal("tax", { precision: 10, scale: 2 }).notNull(),
+  taxes: decimal("taxes", { precision: 10, scale: 2 }).notNull(),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  paymentStatus: text("payment_status").notNull().default("pending"),
+  paymentMethod: text("payment_method").notNull().default("email_verification"),
   deliveryAddress: text("delivery_address").notNull(),
-  phone: varchar("phone").notNull(),
-  notes: text("notes"),
+  customerPhone: text("customer_phone").notNull(),
+  customerName: text("customer_name").notNull(),
   estimatedDeliveryTime: timestamp("estimated_delivery_time"),
-  deliveredAt: timestamp("delivered_at"),
-  paymentStatus: varchar("payment_status", { length: 50 }).default("pending"), // pending, paid, failed
-  paymentMethod: varchar("payment_method", { length: 50 }),
+  actualDeliveryTime: timestamp("actual_delivery_time"),
+  specialInstructions: text("special_instructions"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Order items table
 export const orderItems = pgTable("order_items", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id").references(() => orders.id).notNull(),
-  foodItemId: integer("food_item_id").references(() => foodItems.id).notNull(),
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => orders.id),
+  foodItemId: uuid("food_item_id").notNull().references(() => foodItems.id),
   quantity: integer("quantity").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
-  specialInstructions: text("special_instructions"),
-});
-
-export const cartItems = pgTable("cart_items", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  foodItemId: integer("food_item_id").references(() => foodItems.id).notNull(),
-  quantity: integer("quantity").notNull(),
   specialInstructions: text("special_instructions"),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Order tracking table
+export const orderTracking = pgTable("order_tracking", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => orders.id),
+  status: text("status").notNull(),
+  message: text("message").notNull(),
+  timestamp: timestamp("timestamp").defaultNow(),
 });
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
-  orders: many(orders),
   cartItems: many(cartItems),
+  orders: many(orders),
 }));
 
 export const restaurantsRelations = relations(restaurants, ({ many }) => ({
@@ -146,31 +149,8 @@ export const foodItemsRelations = relations(foodItems, ({ one, many }) => ({
     fields: [foodItems.categoryId],
     references: [categories.id],
   }),
-  orderItems: many(orderItems),
   cartItems: many(cartItems),
-}));
-
-export const ordersRelations = relations(orders, ({ one, many }) => ({
-  user: one(users, {
-    fields: [orders.userId],
-    references: [users.id],
-  }),
-  restaurant: one(restaurants, {
-    fields: [orders.restaurantId],
-    references: [restaurants.id],
-  }),
   orderItems: many(orderItems),
-}));
-
-export const orderItemsRelations = relations(orderItems, ({ one }) => ({
-  order: one(orders, {
-    fields: [orderItems.orderId],
-    references: [orders.id],
-  }),
-  foodItem: one(foodItems, {
-    fields: [orderItems.foodItemId],
-    references: [foodItems.id],
-  }),
 }));
 
 export const cartItemsRelations = relations(cartItems, ({ one }) => ({
@@ -184,10 +164,45 @@ export const cartItemsRelations = relations(cartItems, ({ one }) => ({
   }),
 }));
 
-// Insert schemas
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  user: one(users, {
+    fields: [orders.userId],
+    references: [users.id],
+  }),
+  restaurant: one(restaurants, {
+    fields: [orders.restaurantId],
+    references: [restaurants.id],
+  }),
+  orderItems: many(orderItems),
+  tracking: many(orderTracking),
+}));
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderItems.orderId],
+    references: [orders.id],
+  }),
+  foodItem: one(foodItems, {
+    fields: [orderItems.foodItemId],
+    references: [foodItems.id],
+  }),
+}));
+
+export const orderTrackingRelations = relations(orderTracking, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderTracking.orderId],
+    references: [orders.id],
+  }),
+}));
+
+// Zod schemas
 export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
   createdAt: true,
   updatedAt: true,
+  isVerified: true,
+  otpCode: true,
+  otpExpiry: true,
 });
 
 export const insertRestaurantSchema = createInsertSchema(restaurants).omit({
@@ -207,48 +222,57 @@ export const insertFoodItemSchema = createInsertSchema(foodItems).omit({
   updatedAt: true,
 });
 
-export const insertOrderSchema = createInsertSchema(orders).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
-  id: true,
-});
-
 export const insertCartItemSchema = createInsertSchema(cartItems).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
-// Types  
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export const insertOrderSchema = createInsertSchema(orders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  orderNumber: true,
+});
+
+export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types
 export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Restaurant = typeof restaurants.$inferSelect;
 export type InsertRestaurant = z.infer<typeof insertRestaurantSchema>;
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type FoodItem = typeof foodItems.$inferSelect;
 export type InsertFoodItem = z.infer<typeof insertFoodItemSchema>;
+export type CartItem = typeof cartItems.$inferSelect;
+export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
-export type CartItem = typeof cartItems.$inferSelect;
-export type InsertCartItem = z.infer<typeof insertCartItemSchema>;
+export type OrderTracking = typeof orderTracking.$inferSelect;
 
-// Additional types for API responses
+// Complex types
 export type RestaurantWithItems = Restaurant & {
   foodItems: FoodItem[];
 };
 
-export type OrderWithItems = Order & {
-  orderItems: (OrderItem & { foodItem: FoodItem })[];
+export type FoodItemWithDetails = FoodItem & {
   restaurant: Restaurant;
+  category: Category;
 };
 
 export type CartItemWithDetails = CartItem & {
-  foodItem: FoodItem & { restaurant: Restaurant };
+  foodItem: FoodItemWithDetails;
+};
+
+export type OrderWithDetails = Order & {
+  orderItems: (OrderItem & { foodItem: FoodItem })[];
+  restaurant: Restaurant;
+  tracking: OrderTracking[];
 };
