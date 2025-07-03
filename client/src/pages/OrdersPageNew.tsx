@@ -60,7 +60,7 @@ export function OrdersPageNew() {
             id: order.id || Math.random().toString(),
             orderNumber: order.orderNumber || 'Unknown',
             status: order.status || 'unknown',
-            totalAmount: order.totalAmount || order.total || '0.00',
+            totalAmount: order.total || order.totalAmount || '0.00',
             deliveryAddress: order.deliveryAddress || 'Unknown address',
             createdAt: order.createdAt || new Date().toISOString(),
             restaurant: order.restaurant ? {
