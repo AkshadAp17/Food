@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useLocation } from 'wouter';
 
 interface Restaurant {
   id: string;
@@ -36,6 +37,7 @@ export function HomePage() {
   const [selectedCuisine, setSelectedCuisine] = useState('');
   const { user, logout } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   console.log('HomePage component rendered');
 
@@ -216,7 +218,11 @@ export function HomePage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredRestaurants.map((restaurant) => (
-                <Card key={restaurant.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                <Card 
+                  key={restaurant.id} 
+                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/restaurant/${restaurant.id}`)}
+                >
                   <div className="relative">
                     <img
                       src={restaurant.imageUrl}
