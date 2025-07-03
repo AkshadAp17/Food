@@ -270,7 +270,7 @@ export function RestaurantPage() {
         {/* Menu */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-2xl font-bold mb-6">Menu</h2>
-          {restaurant.foodItems.length === 0 ? (
+          {!restaurant.foodItems || restaurant.foodItems.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🍽️</div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No menu items available</h3>
@@ -278,7 +278,7 @@ export function RestaurantPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {restaurant.foodItems.map((item) => (
+              {(restaurant.foodItems || []).map((item) => (
                 <Card key={item.id} className="hover:shadow-lg transition-shadow">
                   <div className="relative">
                     <img

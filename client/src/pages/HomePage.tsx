@@ -45,7 +45,7 @@ export function HomePage() {
     const fetchCartCount = async () => {
       if (!user) return;
       try {
-        const response = await fetch('/api/cart');
+        const response = await fetch(`/api/cart/${user.id}`);
         if (response.ok) {
           const cartItems = await response.json();
           const totalItems = cartItems.reduce((sum: number, item: any) => sum + item.quantity, 0);
@@ -101,14 +101,14 @@ export function HomePage() {
     fetchData();
   }, [toast]);
 
-  const filteredRestaurants = restaurants.filter(restaurant => {
+  const filteredRestaurants = (restaurants || []).filter(restaurant => {
     const matchesSearch = restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          restaurant.cuisineType.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCuisine = selectedCuisine === '' || restaurant.cuisineType === selectedCuisine;
     return matchesSearch && matchesCuisine;
   });
 
-  const uniqueCuisines = Array.from(new Set(restaurants.map(r => r.cuisineType)));
+  const uniqueCuisines = Array.from(new Set((restaurants || []).map(r => r.cuisineType)));
 
   return (
     <div className="min-h-screen bg-gray-50">
