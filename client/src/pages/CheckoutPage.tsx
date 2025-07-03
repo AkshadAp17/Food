@@ -46,7 +46,7 @@ export function CheckoutPage() {
 
       try {
         setLoading(true);
-        const response = await fetch('/api/cart');
+        const response = await fetch(`/api/cart/${user.id}`);
         if (response.ok) {
           const data = await response.json();
           if (data.length === 0) {
@@ -130,20 +130,20 @@ export function CheckoutPage() {
       const restaurantId = cartItems[0]?.foodItem.restaurant.id;
       
       const orderData = {
-        restaurantId,
-        deliveryAddress,
-        phone,
-        paymentMethod,
-        instructions,
+        order: {
+          userId: user!.id,
+          restaurantId,
+          deliveryAddress,
+          phone,
+          paymentMethod,
+          instructions,
+          totalAmount: total.toString()
+        },
         items: cartItems.map(item => ({
           foodItemId: item.foodItem.id,
           quantity: item.quantity,
-          price: parseFloat(item.foodItem.price)
-        })),
-        subtotal,
-        deliveryFee,
-        tax,
-        total
+          price: parseFloat(item.foodItem.price).toString()
+        }))
       };
 
       const response = await fetch('/api/orders', {
@@ -158,7 +158,7 @@ export function CheckoutPage() {
         const order = await response.json();
         
         // Clear cart after successful order
-        await fetch('/api/cart/clear', { method: 'DELETE' });
+        await fetch(`/api/cart/${user!.id}`, { method: 'DELETE' });
         
         toast({
           title: "Order Placed Successfully! 🎉",
