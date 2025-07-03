@@ -261,14 +261,15 @@ export function HomePage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredRestaurants.map((restaurant) => (
-                <Card 
+                <div 
                   key={restaurant.id} 
-                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  className="cursor-pointer"
                   onClick={() => {
                     console.log('Clicking restaurant:', restaurant.id, restaurant.name);
                     navigate(`/restaurant/${restaurant.id}`);
                   }}
                 >
+                  <Card className="hover:shadow-lg transition-shadow">
                   <div className="relative">
                     <img
                       src={restaurant.imageUrl}
@@ -306,6 +307,7 @@ export function HomePage() {
                     </div>
                   </CardContent>
                 </Card>
+                </div>
               ))}
             </div>
           )}
