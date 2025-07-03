@@ -196,14 +196,14 @@ export function CartPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-6">
-              {Object.entries(groupedItems).map(([restaurantId, items]) => (
+              {Object.entries(groupedItems || {}).map(([restaurantId, items]) => (
                 <Card key={restaurantId}>
                   <CardContent className="p-6">
                     <h3 className="text-lg font-semibold mb-4">
                       {items[0].foodItem.restaurant.name}
                     </h3>
                     <div className="space-y-4">
-                      {items.map((item) => (
+                      {(items || []).map((item) => (
                         <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
                           <img
                             src={item.foodItem.imageUrl}

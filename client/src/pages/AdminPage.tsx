@@ -130,7 +130,7 @@ export function AdminPage() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {pendingOrders.map((order) => (
+            {(pendingOrders || []).map((order) => (
               <Card key={order.id} className="overflow-hidden">
                 <CardHeader className="bg-orange-50">
                   <div className="flex justify-between items-start">
@@ -183,7 +183,7 @@ export function AdminPage() {
                     <div className="space-y-4">
                       <h4 className="font-semibold">Order Items</h4>
                       <div className="space-y-2">
-                        {order.orderItems.map((item) => (
+                        {(order.orderItems || []).map((item) => (
                           <div key={item.id} className="flex justify-between items-center text-sm">
                             <div>
                               <span className="font-medium">{item.foodItem.name}</span>

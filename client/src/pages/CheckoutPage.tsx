@@ -340,7 +340,7 @@ export function CheckoutPage() {
                 
                 {/* Order Items */}
                 <div className="space-y-3 mb-4">
-                  {cartItems.map((item) => (
+                  {(cartItems || []).map((item) => (
                     <div key={item.id} className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="font-medium text-sm">{item.foodItem.name}</div>

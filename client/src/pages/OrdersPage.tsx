@@ -166,7 +166,7 @@ export function OrdersPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {orders.map((order) => (
+            {(orders || []).map((order) => (
               <Card key={order.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -194,7 +194,7 @@ export function OrdersPage() {
 
                       {/* Order Items Preview */}
                       <div className="text-sm text-gray-600 mb-3">
-                        {order.orderItems.slice(0, 2).map((item, index) => (
+                        {(order.orderItems || []).slice(0, 2).map((item, index) => (
                           <span key={item.id}>
                             {item.foodItem.name} ({item.quantity}x)
                             {index < Math.min(order.orderItems.length, 2) - 1 && ', '}

@@ -273,7 +273,7 @@ export function TrackOrderPage() {
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Order Timeline</h3>
                 <div className="space-y-4">
-                  {order.tracking.map((track, index) => (
+                  {(order.tracking || []).map((track, index) => (
                     <div key={track.id} className="flex gap-4">
                       <div className="flex flex-col items-center">
                         <div className={`w-3 h-3 rounded-full ${
@@ -332,7 +332,7 @@ export function TrackOrderPage() {
                 
                 {/* Order Items */}
                 <div className="space-y-3 mb-4">
-                  {order.orderItems.map((item) => (
+                  {(order.orderItems || []).map((item) => (
                     <div key={item.id} className="flex justify-between items-start">
                       <div className="flex gap-3">
                         <img
