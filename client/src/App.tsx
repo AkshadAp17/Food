@@ -13,6 +13,7 @@ import { TrackOrderPageNew as TrackOrderPage } from '@/pages/TrackOrderPageNew';
 import { AdminPage } from '@/pages/AdminPage';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { queryClient } from '@/lib/queryClient';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 function AppRouter() {
   const { user, isLoading } = useAuth();
@@ -51,14 +52,16 @@ function AppRouter() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <div className="min-h-screen bg-gray-50">
-          <AppRouter />
-          <Toaster />
-        </div>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <div className="min-h-screen bg-gray-50">
+            <AppRouter />
+            <Toaster />
+          </div>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

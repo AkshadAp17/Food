@@ -115,14 +115,17 @@ export function RestaurantPage() {
       });
 
       if (response.ok) {
+        console.log('Cart add successful, updating local state...');
         setCartItems(prev => ({
           ...prev,
           [foodItemId]: (prev[foodItemId] || 0) + 1
         }));
+        console.log('Local cart state updated, showing toast...');
         toast({
           title: "Added to cart",
           description: "Item added to your cart successfully"
         });
+        console.log('Toast shown successfully');
       } else {
         throw new Error('Failed to add to cart');
       }
