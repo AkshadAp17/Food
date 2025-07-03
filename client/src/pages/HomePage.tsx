@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Star, Clock, DollarSign, MapPin } from 'lucide-react';
+import { Search, Filter, Star, Clock, DollarSign, MapPin, ShoppingCart, Package, Bell } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/toaster';
 import { Button } from '@/components/ui/button';
@@ -35,9 +35,29 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCuisine, setSelectedCuisine] = useState('');
+  const [cartCount, setCartCount] = useState(0);
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+
+  // Fetch cart count
+  useEffect(() => {
+    const fetchCartCount = async () => {
+      if (!user) return;
+      try {
+        const response = await fetch('/api/cart');
+        if (response.ok) {
+          const cartItems = await response.json();
+          const totalItems = cartItems.reduce((sum: number, item: any) => sum + item.quantity, 0);
+          setCartCount(totalItems);
+        }
+      } catch (error) {
+        console.error('Error fetching cart count:', error);
+      }
+    };
+
+    fetchCartCount();
+  }, [user]);
 
   console.log('HomePage component rendered');
 
@@ -102,6 +122,29 @@ export function HomePage() {
             <div className="flex items-center gap-4">
               {user ? (
                 <div className="flex items-center gap-4">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => navigate('/orders')}
+                    className="flex items-center gap-2"
+                  >
+                    <Package className="h-4 w-4" />
+                    Orders
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => navigate('/cart')}
+                    className="flex items-center gap-2 relative"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    Cart
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </Button>
                   <span className="text-sm text-gray-600">
                     Welcome, {user.firstName}!
                   </span>
