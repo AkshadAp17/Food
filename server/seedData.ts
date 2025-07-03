@@ -424,3 +424,14 @@ export async function seedDatabase() {
     throw error;
   }
 }
+
+// Execute the seeding when run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  seedDatabase().then(() => {
+    console.log('Seeding complete!');
+    process.exit(0);
+  }).catch((error) => {
+    console.error('Seeding failed:', error);
+    process.exit(1);
+  });
+}
