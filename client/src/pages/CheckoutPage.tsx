@@ -133,11 +133,15 @@ export function CheckoutPage() {
         order: {
           userId: user!.id,
           restaurantId,
-          deliveryAddress,
-          phone,
+          subtotal: subtotal.toString(),
+          deliveryFee: deliveryFee.toString(),
+          taxes: tax.toString(),
+          total: total.toString(),
           paymentMethod,
-          instructions,
-          totalAmount: total.toString()
+          deliveryAddress,
+          customerPhone: phone,
+          customerName: `${user!.firstName} ${user!.lastName}`,
+          specialInstructions: instructions || null
         },
         items: cartItems.map(item => ({
           foodItemId: item.foodItem.id,
