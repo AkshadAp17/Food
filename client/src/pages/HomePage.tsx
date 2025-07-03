@@ -264,7 +264,10 @@ export function HomePage() {
                 <Card 
                   key={restaurant.id} 
                   className="hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => navigate(`/restaurant/${restaurant.id}`)}
+                  onClick={() => {
+                    console.log('Clicking restaurant:', restaurant.id, restaurant.name);
+                    navigate(`/restaurant/${restaurant.id}`);
+                  }}
                 >
                   <div className="relative">
                     <img

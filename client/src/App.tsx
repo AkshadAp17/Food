@@ -28,12 +28,12 @@ function AppRouter() {
     <Router>
       <Switch>
         <Route path="/test" component={TestPage} />
-        <Route path="/" component={HomePage} />
         <Route path="/restaurant/:id" component={RestaurantPage} />
         <Route path="/cart" component={CartPage} />
         <Route path="/checkout" component={CheckoutPage} />
         <Route path="/orders" component={OrdersPage} />
         <Route path="/track/:orderId" component={TrackOrderPage} />
+        <Route path="/" component={HomePage} />
         <Route>
           <div className="min-h-screen flex items-center justify-center">
             <div className="text-center">
