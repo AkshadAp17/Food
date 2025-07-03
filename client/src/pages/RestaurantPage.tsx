@@ -78,6 +78,7 @@ export function RestaurantPage() {
   }, [id, navigate, toast]);
 
   const addToCart = async (foodItemId: string) => {
+    console.log('addToCart called - user:', user);
     if (!user) {
       toast({
         title: "Please login",
@@ -86,18 +87,31 @@ export function RestaurantPage() {
       });
       return;
     }
+    
+    if (!user.id) {
+      console.error('User exists but has no ID:', user);
+      toast({
+        title: "Authentication error",
+        description: "Please log out and log in again",
+        variant: "destructive"
+      });
+      return;
+    }
 
     try {
+      const requestBody = {
+        userId: user.id,
+        foodItemId,
+        quantity: 1
+      };
+      console.log('Sending cart request:', requestBody);
+      
       const response = await fetch('/api/cart', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          userId: user.id,
-          foodItemId,
-          quantity: 1
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (response.ok) {

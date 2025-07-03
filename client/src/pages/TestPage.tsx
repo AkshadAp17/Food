@@ -1,66 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 export function TestPage() {
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string>('');
-
-  useEffect(() => {
-    console.log('TestPage: Component mounted');
-    
-    const testAPI = async () => {
-      try {
-        console.log('TestPage: Starting API test...');
-        
-        const response = await fetch('/api/restaurants');
-        console.log('TestPage: Response status:', response.status);
-        console.log('TestPage: Response headers:', Object.fromEntries(response.headers));
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        console.log('TestPage: Received data:', result);
-        setData(result);
-      } catch (err) {
-        console.error('TestPage: Error occurred:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      }
-    };
-
-    testAPI();
-  }, []);
+  const { user } = useAuth();
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>API Test Page</h1>
-      
-      {error ? (
-        <div style={{ color: 'red', padding: '10px', border: '1px solid red' }}>
-          <h3>Error:</h3>
-          <p>{error}</p>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Authentication Test</h1>
+        
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold mb-4">Current User State</h2>
+          
+          {user ? (
+            <div>
+              <p className="text-green-600 font-medium mb-4">User is authenticated ✓</p>
+              <div className="bg-gray-100 p-4 rounded">
+                <pre>{JSON.stringify(user, null, 2)}</pre>
+              </div>
+              
+              <div className="mt-4">
+                <p><strong>User ID:</strong> {user.id || 'MISSING'}</p>
+                <p><strong>Email:</strong> {user.email || 'MISSING'}</p>
+                <p><strong>Name:</strong> {user.firstName} {user.lastName}</p>
+                <p><strong>Verified:</strong> {user.isVerified ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-red-600 font-medium">User is not authenticated ✗</p>
+          )}
         </div>
-      ) : data ? (
-        <div style={{ color: 'green', padding: '10px', border: '1px solid green' }}>
-          <h3>Success! Restaurants found: {Array.isArray(data) ? data.length : 'Invalid data'}</h3>
-          <details>
-            <summary>View Raw Data</summary>
-            <pre style={{ background: '#f5f5f5', padding: '10px', overflow: 'auto' }}>
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          </details>
+        
+        <div className="mt-6">
+          <h2 className="text-lg font-semibold mb-4">LocalStorage Data</h2>
+          <div className="bg-gray-100 p-4 rounded">
+            <pre>{localStorage.getItem('foodie_user') || 'No data in localStorage'}</pre>
+          </div>
         </div>
-      ) : (
-        <div style={{ color: 'blue', padding: '10px', border: '1px solid blue' }}>
-          <h3>Loading...</h3>
-        </div>
-      )}
-      
-      <div style={{ marginTop: '20px', background: '#f0f0f0', padding: '10px' }}>
-        <h3>Debug Info:</h3>
-        <p>Current URL: {window.location.href}</p>
-        <p>Base URL for API: {new URL('/api/restaurants', window.location.origin).href}</p>
-        <p>Timestamp: {new Date().toISOString()}</p>
       </div>
     </div>
   );
