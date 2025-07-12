@@ -479,6 +479,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all orders for admin analytics
+  app.get("/api/admin/orders", async (req, res) => {
+    try {
+      const orders = await storage.getAllActiveOrders();
+      res.json(orders);
+    } catch (error) {
+      console.error("Error fetching admin orders:", error);
+      res.status(500).json({ message: "Failed to fetch orders" });
+    }
+  });
+
   // Admin confirm payment route
   app.post("/api/admin/orders/:orderId/confirm-payment", async (req, res) => {
     try {

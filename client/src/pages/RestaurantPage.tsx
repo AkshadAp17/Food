@@ -303,7 +303,7 @@ export function RestaurantPage() {
                     <p className="text-gray-600 text-sm mb-4">{item.description}</p>
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-bold text-orange-600">${item.price}</span>
-                      {item.isAvailable && (
+                      {item.isAvailable && !user?.isAdmin && (
                         <div className="flex items-center gap-2">
                           {cartItems[itemId] > 0 ? (
                             <div className="flex items-center gap-2">
@@ -335,6 +335,11 @@ export function RestaurantPage() {
                           )}
                         </div>
                       )}
+                      {user?.isAdmin && (
+                        <div className="text-sm text-gray-500 font-medium">
+                          Admin View - Menu Only
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -344,8 +349,8 @@ export function RestaurantPage() {
           )}
         </div>
 
-        {/* Cart Summary */}
-        {Object.keys(cartItems).length > 0 && (
+        {/* Cart Summary - Only for non-admin users */}
+        {!user?.isAdmin && Object.keys(cartItems).length > 0 && (
           <div className="fixed bottom-4 right-4">
             <Button
               onClick={() => navigate('/cart')}

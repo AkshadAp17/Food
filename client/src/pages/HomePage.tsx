@@ -122,29 +122,33 @@ export function HomePage() {
             <div className="flex items-center gap-4">
               {user ? (
                 <div className="flex items-center gap-4">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => navigate('/orders')}
-                    className="flex items-center gap-2"
-                  >
-                    <Package className="h-4 w-4" />
-                    Orders
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => navigate('/cart')}
-                    className="flex items-center gap-2 relative"
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    Cart
-                    {cartCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                        {cartCount}
-                      </span>
-                    )}
-                  </Button>
+                  {!user.isAdmin && (
+                    <>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => navigate('/orders')}
+                        className="flex items-center gap-2"
+                      >
+                        <Package className="h-4 w-4" />
+                        Orders
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => navigate('/cart')}
+                        className="flex items-center gap-2 relative"
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                        Cart
+                        {cartCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            {cartCount}
+                          </span>
+                        )}
+                      </Button>
+                    </>
+                  )}
                   {user.isAdmin && (
                     <Button 
                       variant="ghost" 

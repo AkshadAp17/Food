@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Plus, Store, Menu, Package } from 'lucide-react';
+import { Plus, Store, Menu, Package, TrendingUp, DollarSign } from 'lucide-react';
 
 interface Restaurant {
   _id: string;
@@ -49,6 +49,15 @@ export function AdminDashboard() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('restaurants');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState({
+    totalOrders: 0,
+    totalRevenue: 0,
+    avgOrderValue: 0,
+    popularItems: [],
+    ordersByStatus: {},
+    revenueByRestaurant: {}
+  });
 
   // Restaurant form state
   const [restaurantForm, setRestaurantForm] = useState({
@@ -102,12 +111,64 @@ export function AdminDashboard() {
       const menuItemsData = await menuItemsResponse.json();
       setMenuItems(menuItemsData);
 
+      // Fetch orders
+      const ordersResponse = await fetch('/api/admin/orders');
+      if (ordersResponse.ok) {
+        const ordersData = await ordersResponse.json();
+        setOrders(ordersData);
+        calculateAnalytics(ordersData, restaurantsData, menuItemsData);
+      }
+
     } catch (error) {
       console.error('Error fetching data:', error);
       alert('Failed to fetch data');
     } finally {
       setLoading(false);
     }
+  };
+
+  const calculateAnalytics = (ordersData: any[], restaurantsData: any[], menuItemsData: any[]) => {
+    const totalOrders = ordersData.length;
+    const totalRevenue = ordersData.reduce((sum, order) => sum + order.totalAmount, 0);
+    const avgOrderValue = totalRevenue / totalOrders || 0;
+
+    // Orders by status
+    const ordersByStatus = ordersData.reduce((acc, order) => {
+      acc[order.status] = (acc[order.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Revenue by restaurant
+    const revenueByRestaurant = ordersData.reduce((acc, order) => {
+      const restaurant = restaurantsData.find(r => r._id === order.restaurantId);
+      const name = restaurant ? restaurant.name : 'Unknown';
+      acc[name] = (acc[name] || 0) + order.totalAmount;
+      return acc;
+    }, {});
+
+    // Popular items (simplified)
+    const itemCounts = ordersData.flatMap(order => order.orderItems || [])
+      .reduce((acc, item) => {
+        acc[item.foodItemId] = (acc[item.foodItemId] || 0) + item.quantity;
+        return acc;
+      }, {});
+
+    const popularItems = Object.entries(itemCounts)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
+      .slice(0, 5)
+      .map(([itemId, count]) => {
+        const item = menuItemsData.find(i => i._id === itemId);
+        return { name: item?.name || 'Unknown', count };
+      });
+
+    setAnalytics({
+      totalOrders,
+      totalRevenue,
+      avgOrderValue,
+      popularItems,
+      ordersByStatus,
+      revenueByRestaurant
+    });
   };
 
   const handleRestaurantSubmit = async (e: React.FormEvent) => {
@@ -251,6 +312,18 @@ export function AdminDashboard() {
             >
               <Package className="h-4 w-4 mr-2 inline" />
               Overview
+            </button>
+            <button 
+              onClick={() => setActiveTab('analytics')}
+              className={`px-4 py-2 rounded-lg ${activeTab === 'analytics' ? 'bg-orange-600 text-white' : 'bg-gray-200'}`}
+            >
+              📊 Analytics
+            </button>
+            <button 
+              onClick={() => setActiveTab('orders')}
+              className={`px-4 py-2 rounded-lg ${activeTab === 'orders' ? 'bg-orange-600 text-white' : 'bg-gray-200'}`}
+            >
+              📦 Orders
             </button>
           </div>
 
@@ -805,6 +878,208 @@ export function AdminDashboard() {
                   </CardContent>
                 </Card>
               </div>
+            </div>
+          )}
+
+          {/* Analytics Tab */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <Card className="bg-white">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">{analytics.totalOrders}</div>
+                    <p className="text-xs text-muted-foreground">All time orders</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">${analytics.totalRevenue.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">All time revenue</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Avg Order Value</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-purple-600">${analytics.avgOrderValue.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Per order average</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Restaurants</CardTitle>
+                    <Store className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-600">{restaurants.length}</div>
+                    <p className="text-xs text-muted-foreground">Active partners</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="bg-white">
+                  <CardHeader>
+                    <CardTitle>Popular Menu Items</CardTitle>
+                    <CardDescription>Most ordered items</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {analytics.popularItems.map((item: any, index: number) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-medium text-orange-600">#{index + 1}</span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{item.name}</p>
+                              <p className="text-xs text-muted-foreground">{item.count} orders</p>
+                            </div>
+                          </div>
+                          <div className="w-24 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-orange-600 h-2 rounded-full" 
+                              style={{ width: `${(item.count / Math.max(...analytics.popularItems.map((i: any) => i.count))) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white">
+                  <CardHeader>
+                    <CardTitle>Order Status Distribution</CardTitle>
+                    <CardDescription>Current order statuses</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {Object.entries(analytics.ordersByStatus).map(([status, count]: [string, any]) => (
+                        <div key={status} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-3 h-3 rounded-full ${
+                              status === 'delivered' ? 'bg-green-500' :
+                              status === 'preparing' ? 'bg-yellow-500' :
+                              status === 'pending' ? 'bg-orange-500' :
+                              'bg-gray-500'
+                            }`}></div>
+                            <span className="text-sm font-medium capitalize">{status}</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground">{count} orders</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="bg-white">
+                <CardHeader>
+                  <CardTitle>Revenue by Restaurant</CardTitle>
+                  <CardDescription>Top performing restaurants</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {Object.entries(analytics.revenueByRestaurant)
+                      .sort(([,a], [,b]) => (b as number) - (a as number))
+                      .slice(0, 6)
+                      .map(([name, revenue]: [string, any]) => (
+                      <div key={name} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <Store className="h-5 w-5 text-orange-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{name}</p>
+                            <p className="text-xs text-muted-foreground">${revenue.toFixed(2)} revenue</p>
+                          </div>
+                        </div>
+                        <div className="w-32 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-green-600 h-2 rounded-full" 
+                            style={{ width: `${(revenue / Math.max(...Object.values(analytics.revenueByRestaurant))) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Orders Tab */}
+          {activeTab === 'orders' && (
+            <div className="space-y-6">
+              <Card className="bg-white">
+                <CardHeader>
+                  <CardTitle>All Orders ({orders.length})</CardTitle>
+                  <CardDescription>Manage customer orders and status updates</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {orders.map((order) => (
+                      <Card key={order._id} className="border bg-gray-50">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <h4 className="font-medium">Order #{order._id.slice(-8)}</h4>
+                              <p className="text-sm text-gray-500">
+                                {new Date(order.createdAt).toLocaleDateString()} at {new Date(order.createdAt).toLocaleTimeString()}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-600">${order.totalAmount}</div>
+                              <div className={`text-sm px-2 py-1 rounded ${
+                                order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                                order.status === 'preparing' ? 'bg-yellow-100 text-yellow-800' :
+                                order.status === 'pending' ? 'bg-orange-100 text-orange-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {order.status}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-sm text-gray-600 mb-3">
+                            <p><strong>Customer:</strong> {order.customerName || 'Unknown'}</p>
+                            <p><strong>Email:</strong> {order.customerEmail || 'Unknown'}</p>
+                            <p><strong>Address:</strong> {order.deliveryAddress}</p>
+                          </div>
+                          <div className="border-t pt-3">
+                            <p className="text-sm font-medium mb-2">Items ordered:</p>
+                            <div className="space-y-1">
+                              {order.orderItems?.map((item: any, index: number) => (
+                                <div key={index} className="flex justify-between text-sm">
+                                  <span>{item.quantity}x {item.name || 'Unknown Item'}</span>
+                                  <span>${item.price || 0}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {orders.length === 0 && (
+                      <div className="text-center py-12">
+                        <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
+                        <p className="text-gray-600">Orders will appear here as customers place them</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
         </div>
