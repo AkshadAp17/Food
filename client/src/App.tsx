@@ -11,6 +11,7 @@ import { OrdersPageNew as OrdersPage } from '@/pages/OrdersPageNew';
 import { CheckoutPageNew as CheckoutPage } from '@/pages/CheckoutPageNew';
 import { TrackOrderPageNew as TrackOrderPage } from '@/pages/TrackOrderPageNew';
 import { AdminPage } from '@/pages/AdminPage';
+import { AdminDashboard } from '@/pages/AdminDashboard';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { queryClient } from '@/lib/queryClient';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -36,6 +37,7 @@ function AppRouter() {
         <Route path="/orders" component={OrdersPage} />
         <Route path="/track/:orderId" component={TrackOrderPage} />
         <Route path="/admin" component={AdminPage} />
+        <Route path="/admin-dashboard" component={AdminDashboard} />
         <Route path="/" component={HomePage} />
         <Route>
           <div className="min-h-screen flex items-center justify-center">

@@ -4,9 +4,13 @@ import { storage } from "./mongoStorage.js";
 import { emailService } from "./emailService";
 import { orderTrackingService } from "./orderTrackingService";
 import { seedDatabase } from "./mongoSeedData.js";
+import { isAdmin, createAdminIfNotExists, authenticateAdmin } from "./adminAuth.js";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Create admin user if not exists
+  await createAdminIfNotExists();
   
   // Seed endpoint for development
   app.post("/api/seed", async (req, res) => {
@@ -103,10 +107,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      // Check if user is admin
+      const userIsAdmin = await isAdmin(user.email);
+
       res.json({
         message: "Login successful",
         user: {
-          id: user.id,
+          id: user._id,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -114,7 +121,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           address: user.address,
           city: user.city,
           pincode: user.pincode,
-          isVerified: user.isVerified
+          isVerified: user.isVerified,
+          isAdmin: userIsAdmin,
         }
       });
     } catch (error) {
@@ -547,6 +555,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error initializing data:", error);
       res.status(500).json({ message: "Failed to initialize data" });
+    }
+  });
+
+  // Admin routes - Restaurant Management
+  app.post("/api/admin/restaurants", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || !(await isAdmin(email))) {
+        return res.status(403).json({ message: "Unauthorized - Admin access required" });
+      }
+
+      const restaurantData = req.body;
+      delete restaurantData.email; // Remove email from restaurant data
+      
+      const restaurant = await storage.createRestaurant(restaurantData);
+      res.status(201).json(restaurant);
+    } catch (error) {
+      console.error("Error creating restaurant:", error);
+      res.status(500).json({ message: "Failed to create restaurant" });
+    }
+  });
+
+  app.put("/api/admin/restaurants/:id", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || !(await isAdmin(email))) {
+        return res.status(403).json({ message: "Unauthorized - Admin access required" });
+      }
+
+      // Note: Update functionality would need to be implemented in storage
+      res.status(501).json({ message: "Restaurant update not implemented yet" });
+    } catch (error) {
+      console.error("Error updating restaurant:", error);
+      res.status(500).json({ message: "Failed to update restaurant" });
+    }
+  });
+
+  app.delete("/api/admin/restaurants/:id", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || !(await isAdmin(email))) {
+        return res.status(403).json({ message: "Unauthorized - Admin access required" });
+      }
+
+      // Note: Delete functionality would need to be implemented in storage
+      res.status(501).json({ message: "Restaurant deletion not implemented yet" });
+    } catch (error) {
+      console.error("Error deleting restaurant:", error);
+      res.status(500).json({ message: "Failed to delete restaurant" });
+    }
+  });
+
+  // Admin routes - Menu Management
+  app.post("/api/admin/menu-items", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || !(await isAdmin(email))) {
+        return res.status(403).json({ message: "Unauthorized - Admin access required" });
+      }
+
+      const menuItemData = req.body;
+      delete menuItemData.email; // Remove email from menu item data
+      
+      const menuItem = await storage.createFoodItem(menuItemData);
+      res.status(201).json(menuItem);
+    } catch (error) {
+      console.error("Error creating menu item:", error);
+      res.status(500).json({ message: "Failed to create menu item" });
+    }
+  });
+
+  app.put("/api/admin/menu-items/:id", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || !(await isAdmin(email))) {
+        return res.status(403).json({ message: "Unauthorized - Admin access required" });
+      }
+
+      // Note: Update functionality would need to be implemented in storage
+      res.status(501).json({ message: "Menu item update not implemented yet" });
+    } catch (error) {
+      console.error("Error updating menu item:", error);
+      res.status(500).json({ message: "Failed to update menu item" });
+    }
+  });
+
+  app.delete("/api/admin/menu-items/:id", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || !(await isAdmin(email))) {
+        return res.status(403).json({ message: "Unauthorized - Admin access required" });
+      }
+
+      // Note: Delete functionality would need to be implemented in storage
+      res.status(501).json({ message: "Menu item deletion not implemented yet" });
+    } catch (error) {
+      console.error("Error deleting menu item:", error);
+      res.status(500).json({ message: "Failed to delete menu item" });
+    }
+  });
+
+  // Admin dashboard - Get all orders for admin
+  app.get("/api/admin/orders", async (req, res) => {
+    try {
+      const { email } = req.query;
+      
+      if (!email || !(await isAdmin(email as string))) {
+        return res.status(403).json({ message: "Unauthorized - Admin access required" });
+      }
+
+      const orders = await storage.getAllActiveOrders();
+      res.json(orders);
+    } catch (error) {
+      console.error("Error fetching admin orders:", error);
+      res.status(500).json({ message: "Failed to fetch orders" });
+    }
+  });
+
+  // Admin dashboard - Update order status
+  app.put("/api/admin/orders/:id/status", async (req, res) => {
+    try {
+      const { email, status } = req.body;
+      
+      if (!email || !(await isAdmin(email))) {
+        return res.status(403).json({ message: "Unauthorized - Admin access required" });
+      }
+
+      const order = await storage.updateOrderStatus(req.params.id, status);
+      await storage.addOrderTracking(req.params.id, status, `Order ${status} by admin`);
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      res.status(500).json({ message: "Failed to update order status" });
     }
   });
 

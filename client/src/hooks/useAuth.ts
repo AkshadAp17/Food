@@ -12,6 +12,7 @@ export interface User {
   city?: string;
   pincode?: string;
   isVerified: boolean;
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {
