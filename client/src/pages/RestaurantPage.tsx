@@ -23,7 +23,8 @@ interface Restaurant {
 }
 
 interface FoodItem {
-  id: string;
+  _id?: string;
+  id?: string;
   name: string;
   description: string;
   price: string;
@@ -281,8 +282,10 @@ export function RestaurantPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(restaurant.foodItems || []).map((item) => (
-                <Card key={item.id} className="hover:shadow-lg transition-shadow">
+              {(restaurant.foodItems || []).map((item) => {
+                const itemId = item._id || item.id;
+                return (
+                <Card key={itemId} className="hover:shadow-lg transition-shadow bg-white">
                   <div className="relative">
                     <img
                       src={item.imageUrl}
@@ -295,27 +298,27 @@ export function RestaurantPage() {
                       </div>
                     )}
                   </div>
-                  <CardContent className="p-4">
+                  <CardContent className="p-4 bg-white">
                     <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
                     <p className="text-gray-600 text-sm mb-4">{item.description}</p>
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-bold text-orange-600">${item.price}</span>
                       {item.isAvailable && (
                         <div className="flex items-center gap-2">
-                          {cartItems[item.id] > 0 ? (
+                          {cartItems[itemId] > 0 ? (
                             <div className="flex items-center gap-2">
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => updateCartQuantity(item.id, -1)}
+                                onClick={() => updateCartQuantity(itemId, -1)}
                               >
                                 <Minus className="h-4 w-4" />
                               </Button>
-                              <span className="font-medium">{cartItems[item.id]}</span>
+                              <span className="font-medium">{cartItems[itemId]}</span>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => updateCartQuantity(item.id, 1)}
+                                onClick={() => updateCartQuantity(itemId, 1)}
                               >
                                 <Plus className="h-4 w-4" />
                               </Button>
@@ -323,7 +326,7 @@ export function RestaurantPage() {
                           ) : (
                             <Button
                               size="sm"
-                              onClick={() => addToCart(item.id)}
+                              onClick={() => addToCart(itemId)}
                               className="flex items-center gap-2"
                             >
                               <Plus className="h-4 w-4" />
@@ -335,7 +338,8 @@ export function RestaurantPage() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )})}
+            </div>
             </div>
           )}
         </div>

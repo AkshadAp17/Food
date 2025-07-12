@@ -280,7 +280,7 @@ export function HomePage() {
                     navigate(`/restaurant/${restaurant._id}`);
                   }}
                 >
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card className="hover:shadow-lg transition-shadow bg-white">
                   <div className="relative">
                     <img
                       src={restaurant.imageUrl}
@@ -292,8 +292,13 @@ export function HomePage() {
                         <span className="text-white font-semibold">Closed</span>
                       </div>
                     )}
+                    <div className="absolute top-2 left-2">
+                      <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                        {restaurant.cuisineType}
+                      </Badge>
+                    </div>
                   </div>
-                  <CardContent className="p-4">
+                  <CardContent className="p-4 bg-white">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-semibold text-lg">{restaurant.name}</h3>
                       <div className="flex items-center gap-1">
@@ -313,7 +318,7 @@ export function HomePage() {
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <Badge variant="secondary">{restaurant.cuisineType}</Badge>
+                      <Badge variant="outline">{restaurant.cuisineType}</Badge>
                       <span className="text-sm text-gray-500">Min: ${restaurant.minimumOrder}</span>
                     </div>
                   </CardContent>

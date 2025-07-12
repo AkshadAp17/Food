@@ -361,11 +361,47 @@ export function AdminDashboard() {
 
                   <div>
                     <label className="block text-sm font-medium mb-2">Image URL</label>
-                    <Input
-                      value={restaurantForm.imageUrl}
-                      onChange={(e) => setRestaurantForm({...restaurantForm, imageUrl: e.target.value})}
-                      placeholder="Enter image URL"
-                    />
+                    <div className="space-y-2">
+                      <Input
+                        value={restaurantForm.imageUrl}
+                        onChange={(e) => setRestaurantForm({...restaurantForm, imageUrl: e.target.value})}
+                        placeholder="Enter image URL (e.g., https://images.unsplash.com/...)"
+                      />
+                      <div className="flex space-x-2 flex-wrap">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setRestaurantForm({...restaurantForm, imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80'})}
+                        >
+                          Italian
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setRestaurantForm({...restaurantForm, imageUrl: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=800&q=80'})}
+                        >
+                          Indian
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setRestaurantForm({...restaurantForm, imageUrl: 'https://images.unsplash.com/photo-1525755662778-989d0524087e?auto=format&fit=crop&w=800&q=80'})}
+                        >
+                          Chinese
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setRestaurantForm({...restaurantForm, imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?auto=format&fit=crop&w=800&q=80'})}
+                        >
+                          Pizza
+                        </Button>
+                      </div>
+                    </div>
                   </div>
 
                   <Button type="submit" className="w-full">
@@ -383,7 +419,17 @@ export function AdminDashboard() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {restaurants.map((restaurant) => (
-                    <Card key={restaurant._id} className="relative">
+                    <Card key={restaurant._id} className="relative bg-white border hover:shadow-lg transition-shadow">
+                      <div className="relative">
+                        <img
+                          src={restaurant.imageUrl}
+                          alt={restaurant.name}
+                          className="w-full h-32 object-cover rounded-t-lg"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80';
+                          }}
+                        />
+                      </div>
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-lg">{restaurant.name}</CardTitle>
@@ -527,11 +573,47 @@ export function AdminDashboard() {
 
                   <div>
                     <label className="block text-sm font-medium mb-2">Image URL</label>
-                    <Input
-                      value={menuItemForm.imageUrl}
-                      onChange={(e) => setMenuItemForm({...menuItemForm, imageUrl: e.target.value})}
-                      placeholder="Enter image URL"
-                    />
+                    <div className="space-y-2">
+                      <Input
+                        value={menuItemForm.imageUrl}
+                        onChange={(e) => setMenuItemForm({...menuItemForm, imageUrl: e.target.value})}
+                        placeholder="Enter image URL (e.g., https://images.unsplash.com/...)"
+                      />
+                      <div className="flex space-x-2 flex-wrap">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setMenuItemForm({...menuItemForm, imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?auto=format&fit=crop&w=800&q=80'})}
+                        >
+                          Pizza
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setMenuItemForm({...menuItemForm, imageUrl: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=800&q=80'})}
+                        >
+                          Curry
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setMenuItemForm({...menuItemForm, imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80'})}
+                        >
+                          Salad
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setMenuItemForm({...menuItemForm, imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80'})}
+                        >
+                          Burger
+                        </Button>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -550,44 +632,179 @@ export function AdminDashboard() {
                 </form>
               </CardContent>
             </Card>
+
+            {/* Existing Menu Items */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Existing Menu Items ({menuItems.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {menuItems.map((item) => (
+                    <Card key={item._id} className="relative bg-white border hover:shadow-lg transition-shadow">
+                      <div className="relative">
+                        <img
+                          src={item.imageUrl}
+                          alt={item.name}
+                          className="w-full h-32 object-cover rounded-t-lg"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?auto=format&fit=crop&w=800&q=80';
+                          }}
+                        />
+                        <div className="absolute top-2 right-2">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${item.isVeg ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {item.isVeg ? '🌱 Veg' : '🍖 Non-Veg'}
+                          </span>
+                        </div>
+                      </div>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">{item.name}</CardTitle>
+                          <div className="text-lg font-bold text-orange-600">${item.price}</div>
+                        </div>
+                        <CardDescription>{item.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex justify-between text-sm text-gray-500">
+                          <span>🕐 {item.preparationTime} min</span>
+                          <span>🌶️ {item.spiceLevel}</span>
+                          <span>📊 {item.calories} cal</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
             </div>
           )}
 
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Restaurants</CardTitle>
-                  <Store className="h-4 w-4 text-muted-foreground" />
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card 
+                  className="cursor-pointer hover:shadow-lg transition-shadow bg-white"
+                  onClick={() => setActiveTab('restaurants')}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Restaurants</CardTitle>
+                    <Store className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-600">{restaurants.length}</div>
+                    <p className="text-xs text-muted-foreground">Click to view all restaurants</p>
+                  </CardContent>
+                </Card>
+                <Card 
+                  className="cursor-pointer hover:shadow-lg transition-shadow bg-white"
+                  onClick={() => setActiveTab('menu-items')}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Menu Items</CardTitle>
+                    <Menu className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">{menuItems.length}</div>
+                    <p className="text-xs text-muted-foreground">Click to manage menu items</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Categories</CardTitle>
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">{categories.length}</div>
+                    <p className="text-xs text-muted-foreground">Food categories</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Quick Actions */}
+              <Card className="bg-white">
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                  <CardDescription>Manage your food delivery platform</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{restaurants.length}</div>
-                  <p className="text-xs text-muted-foreground">Active restaurants</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button 
+                      onClick={() => setActiveTab('restaurants')}
+                      className="flex items-center justify-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add New Restaurant
+                    </Button>
+                    <Button 
+                      onClick={() => setActiveTab('menu-items')}
+                      variant="outline"
+                      className="flex items-center justify-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Menu Item
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Menu Items</CardTitle>
-                  <Menu className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{menuItems.length}</div>
-                  <p className="text-xs text-muted-foreground">Available items</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Categories</CardTitle>
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{categories.length}</div>
-                  <p className="text-xs text-muted-foreground">Food categories</p>
-                </CardContent>
-              </Card>
-            </div>
+
+              {/* Recent Activity */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="bg-white">
+                  <CardHeader>
+                    <CardTitle>Recent Restaurants</CardTitle>
+                    <CardDescription>Latest added restaurants</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {restaurants.slice(0, 3).map((restaurant) => (
+                        <div key={restaurant._id} className="flex items-center space-x-3">
+                          <img
+                            src={restaurant.imageUrl}
+                            alt={restaurant.name}
+                            className="w-10 h-10 rounded-lg object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80';
+                            }}
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{restaurant.name}</p>
+                            <p className="text-xs text-muted-foreground">{restaurant.cuisineType}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white">
+                  <CardHeader>
+                    <CardTitle>Categories</CardTitle>
+                    <CardDescription>Available food categories</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {categories.slice(0, 4).map((category) => (
+                        <div key={category._id} className="flex items-center space-x-3">
+                          <img
+                            src={category.imageUrl}
+                            alt={category.name}
+                            className="w-10 h-10 rounded-lg object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80';
+                            }}
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{category.name}</p>
+                            <p className="text-xs text-muted-foreground">{category.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
         </div>
