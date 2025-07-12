@@ -1,9 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./mongoStorage.js";
+import { storage } from "./storage.js";
 import { emailService } from "./emailService";
 import { orderTrackingService } from "./orderTrackingService";
-import { seedDatabase } from "./mongoSeedData.js";
+import { seedDatabase } from "./seedData.js";
 import { isAdmin, createAdminIfNotExists, authenticateAdmin } from "./adminAuth.js";
 import { z } from "zod";
 

@@ -1,4 +1,4 @@
-import { storage } from './mongoStorage.js';
+import { storage } from './storage.js';
 
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'akshadapastambh37@gmail.com';
 

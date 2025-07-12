@@ -1,6 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { connectToDatabase } from "./mongodb.js";
 
 const app = express();
 app.use(express.json());
@@ -18,9 +17,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Connect to MongoDB
-  await connectToDatabase();
-  
   const server = await registerRoutes(app);
 
   // Error handling
