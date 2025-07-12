@@ -1,9 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage.js";
+import { storage } from "./mongoStorage.js";
 import { emailService } from "./emailService";
 import { orderTrackingService } from "./orderTrackingService";
-import { seedDatabase } from "./seedData.js";
+import { seedDatabase } from "./mongoSeedData.js";
 import { isAdmin, createAdminIfNotExists, authenticateAdmin } from "./adminAuth.js";
 import { z } from "zod";
 
@@ -86,6 +86,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("OTP verification error:", error);
       res.status(500).json({ message: "Verification failed" });
+    }
+  });
+
+  // Admin login route
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      // Check if user is admin
+      if (!(await isAdmin(email))) {
+        return res.status(403).json({ message: "Unauthorized - Admin access required" });
+      }
+
+      // Authenticate admin
+      const authenticated = await authenticateAdmin(email, password);
+      if (authenticated) {
+        const user = await storage.getUserByEmail(email);
+        res.json({ 
+          message: "Admin login successful", 
+          admin: {
+            id: user!._id,
+            email: user!.email,
+            firstName: user!.firstName,
+            lastName: user!.lastName,
+            isAdmin: true
+          }
+        });
+      } else {
+        res.status(401).json({ message: "Invalid credentials" });
+      }
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Admin login failed" });
     }
   });
 
