@@ -1,9 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage } from "./mongoStorage.js";
 import { emailService } from "./emailService";
 import { orderTrackingService } from "./orderTrackingService";
-import { seedDatabase } from "./seedData";
+import { seedDatabase } from "./mongoSeedData.js";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
