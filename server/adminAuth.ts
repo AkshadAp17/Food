@@ -10,14 +10,31 @@ export async function createAdminIfNotExists(): Promise<void> {
   try {
     const existingAdmin = await storage.getUserByEmail(ADMIN_EMAIL);
     if (!existingAdmin) {
-      await storage.createUser({
+      // Create admin user with auto-verification
+      const adminUser = await storage.createUser({
         email: ADMIN_EMAIL,
         firstName: 'Admin',
         lastName: 'User',
         password: 'admin123', // Will be hashed
         phone: '',
       });
-      console.log('Admin user created successfully');
+      
+      // Auto-verify admin user
+      await storage.updateUser(adminUser._id, {
+        isVerified: true,
+        otpCode: undefined,
+        otpExpiry: undefined
+      });
+      
+      console.log('Admin user created and verified successfully');
+    } else if (!existingAdmin.isVerified) {
+      // Auto-verify existing admin if not verified
+      await storage.updateUser(existingAdmin._id, {
+        isVerified: true,
+        otpCode: undefined,
+        otpExpiry: undefined
+      });
+      console.log('Admin user verified successfully');
     }
   } catch (error) {
     console.error('Error creating admin user:', error);
