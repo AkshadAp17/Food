@@ -4,7 +4,7 @@ import { ArrowLeft, MapPin, Clock, Phone, CheckCircle, Package, Truck, Home } fr
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
 interface OrderItem {

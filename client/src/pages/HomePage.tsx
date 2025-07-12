@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, Star, Clock, DollarSign, MapPin, ShoppingCart, Package, Bell } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,21 +9,21 @@ import { Badge } from '@/components/ui/badge';
 import { useLocation } from 'wouter';
 
 interface Restaurant {
-  id: string;
+  _id: string;
   name: string;
   description: string;
   cuisineType: string;
   imageUrl: string;
-  rating: string;
+  rating: number;
   deliveryTime: string;
-  minimumOrder: string;
-  deliveryFee: string;
+  minimumOrder: number;
+  deliveryFee: number;
   isOpen: boolean;
   address: string;
 }
 
 interface Category {
-  id: string;
+  _id: string;
   name: string;
   imageUrl: string;
   description: string;
@@ -145,6 +145,17 @@ export function HomePage() {
                       </span>
                     )}
                   </Button>
+                  {user.isAdmin && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => navigate('/admin-dashboard')}
+                      className="flex items-center gap-2 text-orange-600"
+                    >
+                      <Bell className="h-4 w-4" />
+                      Admin Dashboard
+                    </Button>
+                  )}
                   <span className="text-sm text-gray-600">
                     Welcome, {user.firstName}!
                   </span>
@@ -262,11 +273,11 @@ export function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredRestaurants.map((restaurant) => (
                 <div 
-                  key={restaurant.id} 
+                  key={restaurant._id} 
                   className="cursor-pointer"
                   onClick={() => {
-                    console.log('Clicking restaurant:', restaurant.id, restaurant.name);
-                    navigate(`/restaurant/${restaurant.id}`);
+                    console.log('Clicking restaurant:', restaurant._id, restaurant.name);
+                    navigate(`/restaurant/${restaurant._id}`);
                   }}
                 >
                   <Card className="hover:shadow-lg transition-shadow">

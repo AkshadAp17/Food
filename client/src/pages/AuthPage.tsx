@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
 
 export function AuthPage() {

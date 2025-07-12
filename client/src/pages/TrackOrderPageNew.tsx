@@ -4,7 +4,7 @@ import { ArrowLeft, Clock, MapPin, Phone, CheckCircle, Package, Truck, Calendar 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
 interface SafeOrderItem {

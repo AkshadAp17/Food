@@ -176,7 +176,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/restaurants/:id", async (req, res) => {
     try {
-      const restaurant = await storage.getRestaurant(req.params.id);
+      const { id } = req.params;
+      if (!id || id === 'undefined') {
+        return res.status(400).json({ message: "Invalid restaurant ID" });
+      }
+      
+      const restaurant = await storage.getRestaurant(id);
       if (!restaurant) {
         return res.status(404).json({ message: "Restaurant not found" });
       }

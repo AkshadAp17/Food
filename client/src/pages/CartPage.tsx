@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useToast } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
 interface CartItem {
