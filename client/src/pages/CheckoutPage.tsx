@@ -49,11 +49,32 @@ export function CheckoutPage() {
         const response = await fetch(`/api/cart/${user.id}`);
         if (response.ok) {
           const data = await response.json();
+          console.log('Raw cart data:', data);
+          
           if (!data || !Array.isArray(data) || data.length === 0) {
             navigate('/cart');
             return;
           }
-          setCartItems(data);
+          
+          // Transform MongoDB data to match expected interface
+          const transformedData = data.map((item: any) => ({
+            id: item._id || Math.random().toString(),
+            quantity: item.quantity,
+            foodItem: {
+              id: item.foodItem?._id || '',
+              name: item.foodItem?.name || '',
+              description: item.foodItem?.description || '',
+              price: item.foodItem?.price || 0,
+              imageUrl: item.foodItem?.imageUrl || '',
+              restaurant: {
+                id: item.foodItem?.restaurant?._id || '',
+                name: item.foodItem?.restaurant?.name || ''
+              }
+            }
+          }));
+          
+          console.log('Safe cart data:', transformedData);
+          setCartItems(transformedData);
         } else {
           toast({
             title: "Error",
@@ -138,10 +159,12 @@ export function CheckoutPage() {
       const tax = subtotal * 0.1;
       const total = subtotal + deliveryFee + tax;
 
-      // Get restaurant info from cart items
-      const restaurantId = cartItems[0]?.foodItem?.restaurant?.id;
+      // Get restaurant info from cart items - handle MongoDB _id field
+      const restaurantData = cartItems[0]?.foodItem?.restaurant;
+      const restaurantId = restaurantData?.id || restaurantData?._id;
       
       if (!restaurantId) {
+        console.error('Cart items:', cartItems);
         throw new Error("Unable to identify restaurant from cart items");
       }
       
@@ -160,9 +183,9 @@ export function CheckoutPage() {
           specialInstructions: instructions || null
         },
         items: (cartItems || []).map(item => ({
-          foodItemId: item.foodItem?.id || '',
+          foodItemId: item.foodItem?.id || item.foodItem?._id || '',
           quantity: item.quantity,
-          price: item.foodItem?.price ? parseFloat(item.foodItem.price).toString() : '0'
+          price: item.foodItem?.price ? parseFloat(item.foodItem.price.toString()).toString() : '0'
         })).filter(item => item.foodItemId)
       };
 
